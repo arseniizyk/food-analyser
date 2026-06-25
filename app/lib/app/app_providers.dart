@@ -1,7 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/camera/barcode_scanner_service.dart';
-import '../core/camera/camera_service.dart';
 import '../core/network/api_client.dart';
 import '../core/ocr/ocr_service.dart';
 import '../core/storage/local_storage.dart';
@@ -19,15 +18,12 @@ final secureStorageProvider = Provider<SecureStorage>(
   (ref) => MemorySecureStorage(),
 );
 
-final cameraServiceProvider = Provider<CameraService>(
-  (ref) => MockCameraService(),
-);
-
-final barcodeScannerServiceProvider = Provider<BarcodeScannerService>(
-  (ref) => MockBarcodeScannerService(),
-);
-
-final ocrServiceProvider = Provider<OcrService>((ref) => MockOcrService());
+final ocrServiceProvider = Provider<OcrService>((ref) {
+  if (kIsWeb) {
+    return MockOcrService();
+  }
+  return MlKitOcrService();
+});
 
 final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => AuthRepositoryImpl(ref.read(secureStorageProvider)),

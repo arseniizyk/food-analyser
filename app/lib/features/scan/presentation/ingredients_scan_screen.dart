@@ -1,7 +1,14 @@
+import 'dart:io';
+
+import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../../core/camera/camera_permission_helper.dart';
+import '../../../core/camera/scan_overlay.dart';
 import '../domain/scan_session.dart';
 import 'scan_controller.dart';
 
@@ -15,10 +22,169 @@ class IngredientCameraScreen extends ConsumerStatefulWidget {
       _IngredientCameraScreenState();
 }
 
-class _IngredientCameraScreenState
-    extends ConsumerState<IngredientCameraScreen> {
-  bool _flashEnabled = false;
-  bool _hasPreview = false;
+class _IngredientCameraScreenState extends ConsumerState<IngredientCameraScreen>
+    with WidgetsBindingObserver {
+  CameraController? _controller;
+  CameraPermissionStatus _permissionStatus = CameraPermissionStatus.denied;
+  bool _isInitializing = true;
+  bool _torchEnabled = false;
+  String? _capturedImagePath;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    if (kIsWeb) {
+      setState(() => _isInitializing = false);
+      return;
+    }
+
+    final status = await CameraPermissionHelper.check();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _permissionStatus = status;
+      _isInitializing = false;
+    });
+
+    if (status == CameraPermissionStatus.granted) {
+      await _initCamera();
+    }
+  }
+
+  Future<void> _requestPermission() async {
+    setState(() => _isInitializing = true);
+    final status = await CameraPermissionHelper.request();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _permissionStatus = status;
+      _isInitializing = false;
+    });
+
+    if (status == CameraPermissionStatus.granted) {
+      await _initCamera();
+    }
+  }
+
+  Future<void> _initCamera() async {
+    final cameras = await availableCameras();
+    if (!mounted || cameras.isEmpty) {
+      return;
+    }
+
+    final backCamera = cameras.firstWhere(
+      (camera) => camera.lensDirection == CameraLensDirection.back,
+      orElse: () => cameras.first,
+    );
+
+    await _controller?.dispose();
+
+    final controller = CameraController(
+      backCamera,
+      ResolutionPreset.high,
+      enableAudio: false,
+      imageFormatGroup: ImageFormatGroup.jpeg,
+    );
+
+    try {
+      await controller.initialize();
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+
+      setState(() {
+        _controller = controller;
+        _torchEnabled = false;
+      });
+    } catch (_) {
+      await controller.dispose();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not start the camera. Please try again.'),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      return;
+    }
+
+    if (state == AppLifecycleState.inactive) {
+      controller.dispose();
+      _controller = null;
+    } else if (state == AppLifecycleState.resumed &&
+        _capturedImagePath == null) {
+      _initCamera();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _capturePhoto() async {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      return;
+    }
+
+    try {
+      final file = await controller.takePicture();
+      setState(() => _capturedImagePath = file.path);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to capture photo.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 90,
+    );
+
+    if (image != null && mounted) {
+      setState(() => _capturedImagePath = image.path);
+    }
+  }
+
+  Future<void> _toggleTorch() async {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      return;
+    }
+
+    final nextValue = !_torchEnabled;
+    await controller.setFlashMode(
+      nextValue ? FlashMode.torch : FlashMode.off,
+    );
+    if (mounted) {
+      setState(() => _torchEnabled = nextValue);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,13 +201,69 @@ class _IngredientCameraScreenState
 
     final scanState = ref.watch(scanControllerProvider);
     final session = scanState.value;
+    final hasPreview = _capturedImagePath != null;
+
+    if (_isInitializing) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF111512),
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
+      );
+    }
+
+    if (kIsWeb && _capturedImagePath == null) {
+      return _WebFallback(
+        onPickImage: _pickFromGallery,
+        onBack: () => context.go('/app/scan'),
+      );
+    }
+
+    if (_permissionStatus != CameraPermissionStatus.granted && !kIsWeb) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF111512),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          title: const Text('Scan ingredients'),
+        ),
+        body: CameraPermissionView(
+          status: _permissionStatus,
+          onRequest: _requestPermission,
+          message:
+              'Camera access is needed to photograph the ingredients list on the package.',
+        ),
+      );
+    }
+
+    final controller = _controller;
+    final cameraReady = controller != null && controller.value.isInitialized;
 
     return Scaffold(
       backgroundColor: const Color(0xFF111512),
       body: SafeArea(
         child: Stack(
+          fit: StackFit.expand,
           children: [
-            Positioned.fill(child: _IngredientPreview(hasPreview: _hasPreview)),
+            if (hasPreview)
+              _CapturedPreview(imagePath: _capturedImagePath!)
+            else if (cameraReady)
+              FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: controller.value.previewSize!.height,
+                  height: controller.value.previewSize!.width,
+                  child: CameraPreview(controller),
+                ),
+              )
+            else
+              const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+            if (!hasPreview && cameraReady)
+              const ScanOverlay(
+                frameAspectRatio: 0.72,
+                hint: 'Fit the ingredients text inside the frame',
+                showScanLine: false,
+              ),
             Positioned(
               left: 8,
               right: 8,
@@ -65,54 +287,40 @@ class _IngredientCameraScreenState
                       ),
                     ),
                   ),
-                  IconButton(
-                    tooltip: 'Flash',
-                    color: Colors.white,
-                    onPressed: () =>
-                        setState(() => _flashEnabled = !_flashEnabled),
-                    icon: Icon(
-                      _flashEnabled ? Icons.flash_on : Icons.flash_off,
-                    ),
-                  ),
+                  if (!hasPreview && cameraReady)
+                    IconButton(
+                      tooltip: _torchEnabled ? 'Turn flash off' : 'Turn flash on',
+                      color: Colors.white,
+                      onPressed: _toggleTorch,
+                      icon: Icon(
+                        _torchEnabled ? Icons.flash_on : Icons.flash_off,
+                      ),
+                    )
+                  else
+                    const SizedBox(width: 48),
                 ],
               ),
             ),
-            if (!_hasPreview)
-              Center(
-                child: Container(
-                  width: MediaQuery.sizeOf(context).width - 56,
-                  height: 360,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white, width: 2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Text(
-                        'Fit ingredients text inside the frame',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
             Positioned(
               left: 20,
               right: 20,
               bottom: 24,
-              child: _CameraControls(
-                hasPreview: _hasPreview,
+              child: _IngredientControls(
+                hasPreview: hasPreview,
                 isLoading: scanState.isLoading,
                 error: scanState.error?.toString(),
                 barcode: session?.barcode,
-                onCapture: () => setState(() => _hasPreview = true),
-                onRetake: () => setState(() => _hasPreview = false),
-                onUsePhoto: () => ref
-                    .read(scanControllerProvider.notifier)
-                    .captureIngredients(),
-                onGallery: () => setState(() => _hasPreview = true),
+                onCapture: _capturePhoto,
+                onRetake: () => setState(() => _capturedImagePath = null),
+                onUsePhoto: () {
+                  final path = _capturedImagePath;
+                  if (path != null) {
+                    ref
+                        .read(scanControllerProvider.notifier)
+                        .processIngredientsImage(path);
+                  }
+                },
+                onGallery: _pickFromGallery,
               ),
             ),
           ],
@@ -122,53 +330,34 @@ class _IngredientCameraScreenState
   }
 }
 
-class _IngredientPreview extends StatelessWidget {
-  const _IngredientPreview({required this.hasPreview});
+class _CapturedPreview extends StatelessWidget {
+  const _CapturedPreview({required this.imagePath});
 
-  final bool hasPreview;
+  final String imagePath;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: hasPreview
-              ? const [Color(0xFF26352E), Color(0xFFF7F5EE), Color(0xFF18231F)]
-              : const [Color(0xFF17201C), Color(0xFF0E1412), Color(0xFF26352E)],
-        ),
-      ),
+    return ColoredBox(
+      color: Colors.black,
       child: Center(
-        child: hasPreview
-            ? Container(
-                width: MediaQuery.sizeOf(context).width - 48,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'INGREDIENTS: oats, almonds, sugar, cocoa, natural flavor',
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w600,
-                    height: 1.5,
-                  ),
-                ),
-              )
-            : const Icon(
-                Icons.document_scanner_outlined,
-                color: Colors.white24,
-                size: 150,
-              ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 72, 16, 160),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.file(
+              File(imagePath),
+              fit: BoxFit.contain,
+              width: double.infinity,
+            ),
+          ),
+        ),
       ),
     );
   }
 }
 
-class _CameraControls extends StatelessWidget {
-  const _CameraControls({
+class _IngredientControls extends StatelessWidget {
+  const _IngredientControls({
     required this.hasPreview,
     required this.isLoading,
     required this.error,
@@ -198,13 +387,15 @@ class _CameraControls extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.56),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             error ??
-                (barcode == null
-                    ? 'Use good lighting and avoid glare.'
-                    : 'Barcode $barcode was not found. Ingredients are required.'),
+                (hasPreview
+                    ? 'Review the photo, then run OCR.'
+                    : barcode == null
+                    ? 'Use good lighting and hold the phone steady.'
+                    : 'Barcode $barcode was not found. Photograph the ingredients list.'),
             textAlign: TextAlign.center,
             style: const TextStyle(color: Colors.white),
           ),
@@ -213,7 +404,10 @@ class _CameraControls extends StatelessWidget {
         if (isLoading) ...[
           const CircularProgressIndicator(color: Colors.white),
           const SizedBox(height: 12),
-          const Text('Running OCR...', style: TextStyle(color: Colors.white)),
+          const Text(
+            'Recognizing text...',
+            style: TextStyle(color: Colors.white),
+          ),
         ] else if (hasPreview) ...[
           Row(
             children: [
@@ -222,6 +416,7 @@ class _CameraControls extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: Colors.white70),
+                    minimumSize: const Size.fromHeight(48),
                   ),
                   onPressed: onRetake,
                   icon: const Icon(Icons.refresh),
@@ -232,29 +427,93 @@ class _CameraControls extends StatelessWidget {
               Expanded(
                 child: FilledButton.icon(
                   onPressed: onUsePhoto,
-                  icon: const Icon(Icons.check),
-                  label: const Text('Use photo'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  icon: const Icon(Icons.text_fields),
+                  label: const Text('Recognize text'),
                 ),
               ),
             ],
           ),
         ] else ...[
-          FilledButton(
-            onPressed: onCapture,
-            style: FilledButton.styleFrom(
-              shape: const CircleBorder(),
-              padding: const EdgeInsets.all(22),
-            ),
-            child: const Icon(Icons.camera_alt, size: 32),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton.filledTonal(
+                style: IconButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.white24,
+                  padding: const EdgeInsets.all(16),
+                ),
+                onPressed: onGallery,
+                icon: const Icon(Icons.photo_library_outlined),
+                tooltip: 'Choose from gallery',
+              ),
+              const SizedBox(width: 28),
+              FilledButton(
+                onPressed: onCapture,
+                style: FilledButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: const EdgeInsets.all(24),
+                ),
+                child: const Icon(Icons.camera_alt, size: 32),
+              ),
+              const SizedBox(width: 28),
+              const SizedBox(width: 56),
+            ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           TextButton.icon(
             onPressed: onGallery,
+            style: TextButton.styleFrom(foregroundColor: Colors.white70),
             icon: const Icon(Icons.photo_library_outlined),
             label: const Text('Upload from gallery'),
           ),
         ],
       ],
+    );
+  }
+}
+
+class _WebFallback extends StatelessWidget {
+  const _WebFallback({required this.onPickImage, required this.onBack});
+
+  final VoidCallback onPickImage;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Scan ingredients'),
+        leading: IconButton(
+          onPressed: onBack,
+          icon: const Icon(Icons.arrow_back),
+        ),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.photo_library_outlined, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'Camera capture is not available in the browser. Upload a photo of the ingredients label instead.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: onPickImage,
+                icon: const Icon(Icons.upload_file),
+                label: const Text('Upload photo'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

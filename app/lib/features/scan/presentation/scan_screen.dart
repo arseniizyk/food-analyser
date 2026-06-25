@@ -15,9 +15,7 @@ class ScanScreen extends ConsumerStatefulWidget {
 }
 
 class _ScanScreenState extends ConsumerState<ScanScreen> {
-  final TextEditingController _barcodeController = TextEditingController(
-    text: '460000000001',
-  );
+  final TextEditingController _barcodeController = TextEditingController();
 
   @override
   void dispose() {
@@ -80,6 +78,13 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               'Scan a barcode first. If the product is not in the catalog, capture the ingredients label.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
+            const SizedBox(height: 8),
+            Text(
+              'Supports EAN-13, EAN-8, UPC-A and UPC-E codes found on retail packaging.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 16),
             _ModeBanner(isGuest: user?.isGuest ?? true),
             const SizedBox(height: 20),
@@ -111,6 +116,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 labelText: 'Enter barcode manually',
+                hintText: '460000000001',
                 prefixIcon: const Icon(Icons.edit_outlined),
                 suffixIcon: IconButton(
                   tooltip: 'Check barcode',

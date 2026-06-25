@@ -1,4 +1,3 @@
-import '../../../core/camera/camera_service.dart';
 import '../../../core/ocr/ocr_service.dart';
 import '../../analysis/domain/analysis_repository.dart';
 import '../../product/domain/product_repository.dart';
@@ -9,13 +8,11 @@ class ScanRepositoryImpl implements ScanRepository {
   const ScanRepositoryImpl({
     required this.productRepository,
     required this.analysisRepository,
-    required this.cameraService,
     required this.ocrService,
   });
 
   final ProductRepository productRepository;
   final AnalysisRepository analysisRepository;
-  final CameraService cameraService;
   final OcrService ocrService;
 
   @override
@@ -78,8 +75,10 @@ class ScanRepositoryImpl implements ScanRepository {
   }
 
   @override
-  Future<ScanSession> captureIngredients({required ScanSession session}) async {
-    final imagePath = await cameraService.takePhoto();
+  Future<ScanSession> processIngredientsImage({
+    required ScanSession session,
+    required String imagePath,
+  }) async {
     final extractedText = await ocrService.extractTextFromImage(imagePath);
 
     return session.copyWith(

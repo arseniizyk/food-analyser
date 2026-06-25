@@ -12,5 +12,8 @@ abstract interface class ScanRepository {
     required String ingredientsText,
   });
 
-  Future<ScanSession> captureIngredients({required ScanSession session});
+  Future<ScanSession> processIngredientsImage({
+    required ScanSession session,
+    required String imagePath,
+  });
 }

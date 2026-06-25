@@ -26,7 +26,6 @@ final scanRepositoryProvider = Provider<ScanRepository>((ref) {
   return ScanRepositoryImpl(
     productRepository: ref.read(productRepositoryProvider),
     analysisRepository: ref.read(analysisRepositoryProvider),
-    cameraService: ref.read(cameraServiceProvider),
     ocrService: ref.read(ocrServiceProvider),
   );
 });
@@ -92,7 +91,16 @@ class ScanController extends AsyncNotifier<ScanSession?> {
     return session;
   }
 
-  Future<void> captureIngredients() async {
+  Future<void> processIngredientsImage(String imagePath) async {
+    final normalizedPath = imagePath.trim();
+    if (normalizedPath.isEmpty) {
+      state = AsyncError(
+        ArgumentError('Image path is required.'),
+        StackTrace.current,
+      );
+      return;
+    }
+
     final session = _lastSession;
 
     if (session == null) {
@@ -107,7 +115,10 @@ class ScanController extends AsyncNotifier<ScanSession?> {
     state = await AsyncValue.guard(() async {
       final updatedSession = await ref
           .read(scanRepositoryProvider)
-          .captureIngredients(session: session);
+          .processIngredientsImage(
+            session: session,
+            imagePath: normalizedPath,
+          );
       _lastSession = updatedSession;
       return updatedSession;
     });

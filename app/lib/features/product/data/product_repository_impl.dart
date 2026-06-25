@@ -1,3 +1,4 @@
+import '../../../core/camera/barcode_utils.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/storage/local_storage.dart';
 import '../domain/product.dart';
@@ -11,8 +12,17 @@ class RemoteProductRepository implements ProductRepository {
 
   @override
   Future<Product?> getByBarcode(String barcode) async {
-    final json = await _apiClient.getProductByBarcode(barcode);
-    return json == null ? null : ProductDto.fromJson(json);
+    final normalized = BarcodeUtils.normalizeRetailBarcode(barcode) ?? barcode;
+    final candidates = BarcodeUtils.lookupCandidates(normalized);
+
+    for (final candidate in candidates) {
+      final json = await _apiClient.getProductByBarcode(candidate);
+      if (json != null) {
+        return ProductDto.fromJson(json);
+      }
+    }
+
+    return null;
   }
 
   @override
@@ -36,18 +46,23 @@ class LocalProductRepository implements ProductRepository {
 
   @override
   Future<Product?> getByBarcode(String barcode) async {
-    final localJson = await _localStorage.getProductByBarcode(barcode);
-    if (localJson != null) {
-      return ProductDto.fromJson(localJson);
+    final normalized = BarcodeUtils.normalizeRetailBarcode(barcode) ?? barcode;
+    final candidates = BarcodeUtils.lookupCandidates(normalized);
+
+    for (final candidate in candidates) {
+      final localJson = await _localStorage.getProductByBarcode(candidate);
+      if (localJson != null) {
+        return ProductDto.fromJson(localJson);
+      }
+
+      final remoteJson = await _apiClient.getProductByBarcode(candidate);
+      if (remoteJson != null) {
+        await _localStorage.saveProduct(remoteJson);
+        return ProductDto.fromJson(remoteJson);
+      }
     }
 
-    final remoteJson = await _apiClient.getProductByBarcode(barcode);
-    if (remoteJson == null) {
-      return null;
-    }
-
-    await _localStorage.saveProduct(remoteJson);
-    return ProductDto.fromJson(remoteJson);
+    return null;
   }
 
   @override
