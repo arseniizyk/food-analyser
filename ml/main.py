@@ -1,6 +1,7 @@
 """
 FastAPI server for OCR recognition using PaddleOCR.
 Supports Russian text recognition for food ingredient labels.
+Compatible with PaddleOCR 2.x and 3.x.
 """
 
 import io
@@ -47,10 +48,57 @@ def get_ocr() -> PaddleOCR:
         with _ocr_lock:
             if _ocr is None:
                 logger.info(
-                    "Initializing PaddleOCR model (first run may download ~150MB)...")
+                    "Initializing PaddleOCR model (first run may download ~150MB)..."
+                )
                 _ocr = PaddleOCR(use_angle_cls=True, lang="ru")
                 logger.info("PaddleOCR model loaded successfully")
     return _ocr
+
+
+def parse_ocr_result(result) -> tuple[list[str], list[float]]:
+    """
+    Parse PaddleOCR result into (texts, confidences).
+
+    PaddleOCR 3.x: result is a list of dicts with keys rec_texts / rec_scores.
+    PaddleOCR 2.x: result is a list of lists [[bbox, (text, conf)], ...].
+    """
+    if not result or not result[0]:
+        return [], []
+
+    page = result[0]
+
+    # --- PaddleOCR 3.x ---
+    if isinstance(page, dict):
+        rec_texts = page.get("rec_texts", [])
+        rec_scores = page.get("rec_scores", [])
+        logger.info(f"PaddleOCR 3.x format detected: {len(rec_texts)} lines")
+        texts, confs = [], []
+        for text, conf in zip(rec_texts, rec_scores):
+            if isinstance(text, str) and text.strip():
+                texts.append(text)
+                confs.append(float(conf))
+        return texts, confs
+
+    # --- PaddleOCR 2.x ---
+    logger.info("PaddleOCR 2.x format detected")
+    texts, confs = [], []
+    for line in page:
+        if not isinstance(line, (list, tuple)) or len(line) < 2:
+            logger.warning(f"Skipping unexpected line: {line}")
+            continue
+
+        text_conf = line[1]
+
+        if not isinstance(text_conf, (list, tuple)) or len(text_conf) != 2:
+            logger.warning(f"Skipping unexpected text_conf: {text_conf}")
+            continue
+
+        text, conf = text_conf
+        if isinstance(text, str) and text.strip():
+            texts.append(text)
+            confs.append(float(conf))
+
+    return texts, confs
 
 
 # ---------------------------
@@ -67,7 +115,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Food OCR Service",
     description="REST API for ingredient text recognition",
-    version="1.1.0",
+    version="1.3.0",
     lifespan=lifespan,
 )
 
@@ -95,10 +143,13 @@ async def recognize_text(file: UploadFile = File(...)):
     Recognize text from an image.
     """
     logger.info(
-        f"Received OCR request: filename={file.filename}, content_type={file.content_type}")
+        f"Received OCR request: filename={file.filename}, "
+        f"content_type={file.content_type}"
+    )
 
     try:
         content = await file.read()
+        logger.info(f"File size: {len(content)} bytes")
 
         if len(content) > MAX_FILE_SIZE:
             raise HTTPException(
@@ -116,42 +167,31 @@ async def recognize_text(file: UploadFile = File(...)):
                 detail="Uploaded file is not a valid image",
             )
 
+        logger.info(f"Image loaded: size={image.size}, mode={image.mode}")
         logger.info("Running OCR inference...")
+
         ocr_service = get_ocr()
         image_array = np.array(image.convert("RGB"))
         result = ocr_service.ocr(image_array)
 
-        if not result or not result[0]:
+        all_texts, all_confidences = parse_ocr_result(result)
+
+        if not all_texts:
             logger.info("No text detected in image")
             return {"text": "", "confidence": 0.0, "lines": []}
 
-        extracted_lines = []
-        all_texts = []
-        all_confidences = []
-
-        for line in result[0]:
-            if len(line) >= 3:
-                bbox, text, confidence = line[0], line[1], line[2]
-            elif len(line) == 2:
-                bbox = line[0]
-                text, confidence = line[1]
-            else:
-                continue
-            extracted_lines.append(
-                {"text": text, "confidence": float(confidence)}
-            )
-            all_texts.append(text)
-            all_confidences.append(float(confidence))
+        extracted_lines = [
+            {"text": text, "confidence": round(conf, 3)}
+            for text, conf in zip(all_texts, all_confidences)
+        ]
 
         full_text = " ".join(all_texts)
-        avg_confidence = (
-            sum(all_confidences) / len(all_confidences)
-            if all_confidences
-            else 0.0
-        )
+        avg_confidence = sum(all_confidences) / len(all_confidences)
 
         logger.info(
-            f"OCR completed: lines={len(extracted_lines)}, avg_conf={avg_confidence:.3f}"
+            f"OCR result: {full_text}"
+            f"OCR completed: lines={len(extracted_lines)}, "
+            f"avg_conf={avg_confidence:.3f}"
         )
 
         return {
@@ -172,8 +212,4 @@ async def recognize_text(file: UploadFile = File(...)):
 
 if __name__ == "__main__":
     logger.info(f"Launching uvicorn server on {HOST}:{PORT}")
-
-    import sys
-    sys.argv = ["uvicorn", "main:app", "--host", HOST,
-                "--port", str(PORT), "--log-level", "info"]
-    uvicorn.main()
+    uvicorn.run(app, host=HOST, port=PORT, log_level="info")

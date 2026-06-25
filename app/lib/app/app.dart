@@ -11,7 +11,7 @@ class FoodAnalyzerApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'Food Analyzer',
+      title: 'FoodCheck',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1F7A4D)),

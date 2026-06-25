@@ -162,6 +162,7 @@ class _MovableSelectionOverlayState extends State<MovableSelectionOverlay> {
     }
 
     _applyRect(next, parentSize);
+    _resizeStartRect = _currentRect(parentSize);
   }
 
   @override
@@ -273,18 +274,24 @@ class _HandleWidget extends StatelessWidget {
     return Align(
       alignment: alignment,
       child: Transform.translate(
-        offset: Offset(alignment.x < 0 ? -10 : 10, alignment.y < 0 ? -10 : 10),
+        offset: Offset(alignment.x < 0 ? -14 : 14, alignment.y < 0 ? -14 : 14),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onPanStart: onPanStart,
           onPanUpdate: onPanUpdate,
-          child: Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.black54, width: 1),
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Center(
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.black54, width: 1),
+                ),
+              ),
             ),
           ),
         ),
