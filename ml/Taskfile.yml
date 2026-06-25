@@ -1,0 +1,67 @@
+version: '3'
+
+vars:
+    PYTHON: python3
+    VENV_DIR: .venv
+    VENV_PYTHON: '{{.VENV_DIR}}/bin/python'
+    VENV_PIP: '{{.VENV_DIR}}/bin/pip'
+    HOST: 0.0.0.0
+    PORT: 8000
+    LOCAL_URL: http://127.0.0.1:8000
+
+tasks:
+    default:
+        desc: Run the OCR service in development mode
+        cmds:
+            - task: dev
+
+    setup:
+        desc: Create virtualenv and install Python dependencies
+        cmds:
+            - test -d {{.VENV_DIR}} || {{.PYTHON}} -m venv {{.VENV_DIR}}
+            - '{{.VENV_PIP}} install --upgrade pip'
+            - '{{.VENV_PIP}} install -r requirements.txt'
+
+    run:
+        desc: Run the OCR service with uvicorn
+        deps: [setup]
+        cmds:
+            - '{{.VENV_PYTHON}} -m uvicorn main:app --host {{.HOST}} --port {{.PORT}}'
+
+    dev:
+        desc: Run the OCR service with auto-reload
+        deps: [setup]
+        cmds:
+            - '{{.VENV_PYTHON}} -m uvicorn main:app --host {{.HOST}} --port {{.PORT}} --reload'
+
+    health:
+        desc: Check the local health endpoint
+        cmds:
+            - curl -s {{.LOCAL_URL}}/health | python3 -m json.tool
+
+    ocr:
+        desc: Send an image to the OCR endpoint
+        requires:
+            vars: [IMAGE]
+        cmds:
+            - curl -s -X POST -F "file=@{{.IMAGE}}" {{.LOCAL_URL}}/ocr
+
+    docker:build:
+        desc: Build the OCR Docker image
+        cmds:
+            - docker build -t food-ocr .
+
+    docker:run:
+        desc: Run the OCR service in Docker
+        cmds:
+            - docker run --rm --name food-ocr -p 8000:8000 food-ocr
+
+    docker:stop:
+        desc: Stop the running OCR container
+        cmds:
+            - docker rm -f food-ocr
+
+    docker:logs:
+        desc: Show logs from the OCR container
+        cmds:
+            - docker logs -f food-ocr

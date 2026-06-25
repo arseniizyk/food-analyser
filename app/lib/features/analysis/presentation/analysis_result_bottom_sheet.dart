@@ -161,14 +161,6 @@ class _ResultBody extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.ios_share),
-                      label: const Text('Share'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
                     child: FilledButton.icon(
                       onPressed: onScanAnother,
                       icon: const Icon(Icons.qr_code_scanner),

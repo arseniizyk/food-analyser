@@ -25,6 +25,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
   CameraPermissionStatus _permissionStatus = CameraPermissionStatus.denied;
   bool _isCheckingPermission = true;
   bool _isProcessingScan = false;
+  bool _isConfirmingBarcode = false;
   String? _lastScannedBarcode;
 
   @override
@@ -60,6 +61,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
     setState(() {
       _isProcessingScan = false;
       _lastScannedBarcode = null;
+      _isConfirmingBarcode = false;
     });
   }
 
@@ -92,7 +94,8 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
       controller.stop();
     } else if (state == AppLifecycleState.resumed &&
         _permissionStatus == CameraPermissionStatus.granted &&
-        !_isProcessingScan) {
+        !_isProcessingScan &&
+        !_isConfirmingBarcode) {
       controller.start();
     }
   }
@@ -105,9 +108,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
   }
 
   Future<void> _handleBarcode(String rawValue) async {
-    if (_isProcessingScan) {
-      return;
-    }
+    if (_isProcessingScan || _isConfirmingBarcode) return;
 
     final barcode = BarcodeUtils.normalizeRetailBarcode(rawValue);
     if (barcode == null) {
@@ -122,17 +123,54 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
       return;
     }
 
-    if (barcode == _lastScannedBarcode) {
+    if (barcode == _lastScannedBarcode) return;
+
+    setState(() {
+      _isConfirmingBarcode = true;
+      _lastScannedBarcode = barcode;
+    });
+
+    await _controller?.stop();
+
+    // Ask user to confirm detected barcode before proceeding to avoid accidental scans
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Confirm barcode'),
+          content: Text(
+            'Detected barcode: $barcode\n\nProceed with this barcode?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Confirm'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) {
+      if (mounted) {
+        setState(() {
+          _isConfirmingBarcode = false;
+        });
+      }
+      await _controller?.start();
       return;
     }
 
     setState(() {
       _isProcessingScan = true;
-      _lastScannedBarcode = barcode;
+      _isConfirmingBarcode = false;
     });
 
     await HapticFeedback.mediumImpact();
-    await _controller?.stop();
 
     await ref.read(scanControllerProvider.notifier).scanBarcode(barcode);
   }
@@ -144,6 +182,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
 
     setState(() {
       _isProcessingScan = false;
+      _isConfirmingBarcode = false;
       _lastScannedBarcode = null;
     });
     _controller?.start();
@@ -205,7 +244,9 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
                     MobileScanner(
                       controller: _controller,
                       onDetect: (capture) {
-                        if (_isProcessingScan || isLoading) {
+                        if (_isProcessingScan ||
+                            _isConfirmingBarcode ||
+                            isLoading) {
                           return;
                         }
 

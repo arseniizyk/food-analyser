@@ -5,10 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../core/camera/camera_permission_helper.dart';
-import '../../../core/camera/scan_overlay.dart';
+import '../../../core/camera/movable_selection_overlay.dart';
 import '../domain/scan_session.dart';
 import 'scan_controller.dart';
 
@@ -29,6 +31,7 @@ class _IngredientCameraScreenState extends ConsumerState<IngredientCameraScreen>
   bool _isInitializing = true;
   bool _torchEnabled = false;
   String? _capturedImagePath;
+  Rect _selectionRect = const Rect.fromLTWH(0.1, 0.3, 0.8, 0.35);
 
   @override
   void initState() {
@@ -141,6 +144,52 @@ class _IngredientCameraScreenState extends ConsumerState<IngredientCameraScreen>
     super.dispose();
   }
 
+  void _updateSelection(Rect rect) {
+    if (rect.width <= 0 || rect.height <= 0) {
+      return;
+    }
+    _selectionRect = rect;
+  }
+
+  Future<String> _cropToSelection(String imagePath) async {
+    final bytes = await File(imagePath).readAsBytes();
+    final decoded = img.decodeImage(bytes);
+    if (decoded == null) {
+      return imagePath;
+    }
+
+    final left = (_selectionRect.left * decoded.width).round().clamp(
+      0,
+      decoded.width - 1,
+    );
+    final top = (_selectionRect.top * decoded.height).round().clamp(
+      0,
+      decoded.height - 1,
+    );
+    final width = (_selectionRect.width * decoded.width).round().clamp(
+      1,
+      decoded.width - left,
+    );
+    final height = (_selectionRect.height * decoded.height).round().clamp(
+      1,
+      decoded.height - top,
+    );
+
+    final cropped = img.copyCrop(
+      decoded,
+      x: left,
+      y: top,
+      width: width,
+      height: height,
+    );
+
+    final directory = await getTemporaryDirectory();
+    final outputPath =
+        '${directory.path}/ingredient_crop_${DateTime.now().microsecondsSinceEpoch}.jpg';
+    await File(outputPath).writeAsBytes(img.encodeJpg(cropped, quality: 92));
+    return outputPath;
+  }
+
   Future<void> _capturePhoto() async {
     final controller = _controller;
     if (controller == null || !controller.value.isInitialized) {
@@ -149,7 +198,10 @@ class _IngredientCameraScreenState extends ConsumerState<IngredientCameraScreen>
 
     try {
       final file = await controller.takePicture();
-      setState(() => _capturedImagePath = file.path);
+      final croppedPath = await _cropToSelection(file.path);
+      if (mounted) {
+        setState(() => _capturedImagePath = croppedPath);
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -167,7 +219,10 @@ class _IngredientCameraScreenState extends ConsumerState<IngredientCameraScreen>
     );
 
     if (image != null && mounted) {
-      setState(() => _capturedImagePath = image.path);
+      final croppedPath = await _cropToSelection(image.path);
+      if (mounted) {
+        setState(() => _capturedImagePath = croppedPath);
+      }
     }
   }
 
@@ -178,9 +233,7 @@ class _IngredientCameraScreenState extends ConsumerState<IngredientCameraScreen>
     }
 
     final nextValue = !_torchEnabled;
-    await controller.setFlashMode(
-      nextValue ? FlashMode.torch : FlashMode.off,
-    );
+    await controller.setFlashMode(nextValue ? FlashMode.torch : FlashMode.off);
     if (mounted) {
       setState(() => _torchEnabled = nextValue);
     }
@@ -259,10 +312,9 @@ class _IngredientCameraScreenState extends ConsumerState<IngredientCameraScreen>
                 child: CircularProgressIndicator(color: Colors.white),
               ),
             if (!hasPreview && cameraReady)
-              const ScanOverlay(
-                frameAspectRatio: 0.72,
-                hint: 'Fit the ingredients text inside the frame',
-                showScanLine: false,
+              // MovableSelectionOverlay handles its own gestures.
+              SizedBox.expand(
+                child: MovableSelectionOverlay(onChanged: _updateSelection),
               ),
             Positioned(
               left: 8,
@@ -289,7 +341,9 @@ class _IngredientCameraScreenState extends ConsumerState<IngredientCameraScreen>
                   ),
                   if (!hasPreview && cameraReady)
                     IconButton(
-                      tooltip: _torchEnabled ? 'Turn flash off' : 'Turn flash on',
+                      tooltip: _torchEnabled
+                          ? 'Turn flash off'
+                          : 'Turn flash on',
                       color: Colors.white,
                       onPressed: _toggleTorch,
                       icon: Icon(
@@ -431,7 +485,7 @@ class _IngredientControls extends StatelessWidget {
                     minimumSize: const Size.fromHeight(48),
                   ),
                   icon: const Icon(Icons.text_fields),
-                  label: const Text('Recognize text'),
+                  label: const Text('Send'),
                 ),
               ),
             ],

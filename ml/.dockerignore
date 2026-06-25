@@ -1,0 +1,15 @@
+.venv
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+dist
+build
+.env
+.env.*
+*.md
+Taskfile
+Taskfile.yml
+.dockerignore

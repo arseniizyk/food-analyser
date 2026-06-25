@@ -12,6 +12,8 @@
 	<string>Camera access is used to scan product barcodes and photograph ingredient labels.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Photo library access lets you select ingredient label photos for text recognition.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Camera access is needed to save ingredient photos to your library.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

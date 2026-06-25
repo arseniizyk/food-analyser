@@ -96,20 +96,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               label: const Text('Scan barcode'),
             ),
             const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: scanState.isLoading
-                  ? null
-                  : () async {
-                      final session = await ref
-                          .read(scanControllerProvider.notifier)
-                          .startIngredientSession();
-                      if (context.mounted) {
-                        context.go('/app/scan/ingredients/${session.id}');
-                      }
-                    },
-              icon: const Icon(Icons.document_scanner_outlined),
-              label: const Text('Scan ingredients directly'),
-            ),
+            // Removed direct ingredients scan button: workflow now starts from barcode only.
             const SizedBox(height: 24),
             TextField(
               controller: _barcodeController,

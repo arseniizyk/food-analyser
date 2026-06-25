@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:http/http.dart' as http;
 
 abstract interface class ApiClient {
   Future<Map<String, Object?>?> getProductByBarcode(String barcode);
@@ -17,6 +19,8 @@ abstract interface class ApiClient {
   Future<List<Map<String, Object?>>> getHistory(String userId);
 
   Future<Map<String, Object?>?> getAnalysisById(String analysisId);
+
+  Future<String?> ocrRecognizeImage(String imagePath);
 }
 
 class FakeApiClient implements ApiClient {
@@ -124,11 +128,116 @@ class FakeApiClient implements ApiClient {
     return _analyses[analysisId];
   }
 
+  @override
+  Future<String?> ocrRecognizeImage(String imagePath) async {
+    // Fake implementation: parse ingredients from image path or return placeholder.
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    // In real implementation, this would upload the image bytes to OCR service.
+    return _parseIngredients(imagePath).join(', ');
+  }
+
   List<String> _parseIngredients(String text) {
     return text
         .split(RegExp(r'[,;\n]'))
         .map((item) => item.trim().toLowerCase())
         .where((item) => item.isNotEmpty)
         .toList();
+  }
+}
+
+/// Real HTTP API client that communicates with backend services.
+class HttpApiClient implements ApiClient {
+  HttpApiClient({required this.baseUrl, required this.ocrServiceUrl});
+
+  final String baseUrl;
+  final String ocrServiceUrl;
+
+  @override
+  Future<Map<String, Object?>?> getProductByBarcode(String barcode) async {
+    // TODO: Implement real API call
+    await Future<void>.delayed(const Duration(milliseconds: 450));
+    return null;
+  }
+
+  @override
+  Future<Map<String, Object?>> createProductFromIngredients({
+    required String barcode,
+    required String ingredientsText,
+  }) async {
+    // TODO: Implement real API call
+    await Future<void>.delayed(const Duration(milliseconds: 450));
+    return {
+      'id': 'product-${DateTime.now().microsecondsSinceEpoch}',
+      'barcode': barcode,
+      'name': 'Unknown product',
+      'brand': null,
+      'imageUrl': null,
+      'ingredients': ingredientsText.split(','),
+      'createdAt': DateTime.now().toIso8601String(),
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
+  }
+
+  @override
+  Future<Map<String, Object?>> analyzeProduct({
+    required String productId,
+    required String userId,
+    required String ingredientsText,
+  }) async {
+    // TODO: Implement real API call
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    return {
+      'id': 'analysis-${DateTime.now().microsecondsSinceEpoch}',
+      'productId': productId,
+      'userId': userId,
+      'score': {'value': 80, 'label': 'good'},
+      'risks': [],
+      'summary': ['Composition looks balanced.'],
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> getHistory(String userId) async {
+    // TODO: Implement real API call
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    return [];
+  }
+
+  @override
+  Future<Map<String, Object?>?> getAnalysisById(String analysisId) async {
+    // TODO: Implement real API call
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    return null;
+  }
+
+  @override
+  Future<String?> ocrRecognizeImage(String imagePath) async {
+    try {
+      final file = File(imagePath);
+      if (!await file.exists()) {
+        throw FileSystemException('File not found: $imagePath');
+      }
+
+      final uri = Uri.parse('$ocrServiceUrl/ocr');
+      final request = http.MultipartRequest('POST', uri);
+      request.files.add(await http.MultipartFile.fromPath('file', imagePath));
+
+      final response = await request.send();
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          'OCR request failed with status ${response.statusCode}',
+        );
+      }
+
+      final responseData = await response.stream.bytesToString();
+      // Parse JSON response
+      // Expected format: {"text": "...", "confidence": 0.9, "lines": [...]}
+      // For now, just return the raw response as text
+      return responseData;
+    } catch (e) {
+      throw Exception('OCR request failed: $e');
+    }
   }
 }
