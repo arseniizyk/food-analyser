@@ -1,0 +1,19 @@
+type: object
+required:
+  - name
+  - risk
+properties:
+  name:
+    type: string
+    example: Sugar
+
+  risk:
+    type: string
+    enum:
+      - safe
+      - caution
+      - dangerous
+
+  description:
+    type: string
+    nullable: true

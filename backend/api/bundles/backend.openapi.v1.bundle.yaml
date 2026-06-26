@@ -1,0 +1,284 @@
+openapi: 3.0.3
+info:
+  title: Backend API
+  version: 1.0.0
+  description: Backend для работы анализатора продуктов
+tags:
+  - name: Backend
+    description: операции с данными о продуктах и юзерах
+paths:
+  /api/v1/product/{barcode}:
+    parameters:
+      - $ref: '#/components/parameters/barcode'
+    get:
+      summary: Get analysis for a product
+      operationId: GetAnalysisByBarcode
+      tags:
+        - Barcode, Analysis
+      responses:
+        '200':
+          description: Analysis information successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/analysis'
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bad_request_error'
+        '404':
+          description: Barcode analysis wasn't found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/not_found_error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_server_error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/generic_error'
+  /api/v1/analyze/{barcode}:
+    parameters:
+      - $ref: '#/components/parameters/barcode'
+    post:
+      summary: Analyze product nutrition photo
+      operationId: AnalyzeProduct
+      tags:
+        - Product, Analysis
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - image
+              properties:
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Analyze has competed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/analysis'
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bad_request_error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_server_error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/generic_error'
+  /api/v1/auth/google:
+    post:
+      tags:
+        - Authentication
+      summary: Authenticate with Google
+      operationId: authenticateWithGoogle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/auth_google_request'
+      responses:
+        '200':
+          description: Authentication successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/auth_response'
+        '401':
+          description: Invalid Google token.
+        '500':
+          description: Internal server error.
+components:
+  parameters:
+    barcode:
+      name: barcode
+      in: path
+      required: true
+      description: Barcode продукта, для которого запрашивается анализ
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 15
+        example: '5901234123457'
+  schemas:
+    generic_error:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: HTTP-код ошибки
+        message:
+          type: string
+          description: Описание ошибки
+    summary_item:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: balanced_composition
+        message:
+          type: string
+          example: Composition looks balanced.
+    risk:
+      type: object
+      required:
+        - severity
+        - title
+        - description
+      properties:
+        severity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        title:
+          type: string
+          example: High sugar
+        description:
+          type: string
+          example: Contains a significant amount of added sugar.
+    ingredient:
+      type: object
+      required:
+        - name
+        - risk
+      properties:
+        name:
+          type: string
+          example: Sugar
+        risk:
+          type: string
+          enum:
+            - safe
+            - caution
+            - dangerous
+        description:
+          type: string
+          nullable: true
+    analysis:
+      type: object
+      required:
+        - id
+        - score
+        - grade
+        - summary
+        - risks
+        - ingredients
+      properties:
+        id:
+          type: string
+          example: product-45454545
+        score:
+          type: integer
+          description: Оценка продукта
+          minimum: 0
+          maximum: 100
+          example: 85
+        grade:
+          type: string
+          enum:
+            - excellent
+            - good
+            - average
+            - poor
+        summary:
+          type: array
+          items:
+            $ref: '#/components/schemas/summary_item'
+        risks:
+          type: array
+          items:
+            $ref: '#/components/schemas/risk'
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/ingredient'
+    bad_request_error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: HTTP-код ошибки
+          example: 400
+        message:
+          type: string
+          description: Описание ошибки
+          example: 'Bad Request: Invalid parameter format'
+    not_found_error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: HTTP-код ошибки
+          example: 404
+        message:
+          type: string
+          description: Описание ошибки
+          example: Analysis for barcode not found
+    internal_server_error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: HTTP-код ошибки
+          example: 500
+        message:
+          type: string
+          description: Описание ошибки
+          example: Internal server error occurred
+    auth_google_request:
+      type: object
+      required:
+        - id_token
+      properties:
+        id_token:
+          type: string
+    auth_response:
+      type: object
+      required:
+        - access_token
+        - refresh_token
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string

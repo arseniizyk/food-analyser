@@ -1,0 +1,5 @@
+package: v1
+output: ./pkg/openapi/backend/v1/backend.gen.go
+generate:
+  models: true
+  chi-server: true

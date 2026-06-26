@@ -1,0 +1,39 @@
+parameters:
+  - $ref: ../params/barcode.yaml
+
+get:
+  summary: Get analysis for a product
+  operationId: GetAnalysisByBarcode
+  tags:
+    - Barcode, Analysis
+  responses:
+    '200':
+      description: Analysis information successfully retrieved
+      content:
+        application/json:
+          schema:
+            $ref: ../components/analysis.yaml
+    '404':
+      description: Barcode analysis wasn't found
+      content:
+        application/json:
+          schema:
+            $ref: ../components/errors/not_found_error.yaml
+    '400':
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/errors/bad_request_error.yaml
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/errors/internal_server_error.yaml
+    default:
+      description: Unexpected error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/errors/generic_error.yaml

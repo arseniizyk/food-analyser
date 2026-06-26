@@ -1,0 +1,128 @@
+version: "2"
+
+run:
+  timeout: 2m
+  relative-path-mode: gomod
+  issues-exit-code: 1
+  tests: true
+  modules-download-mode: readonly
+
+output:
+  formats:
+    text:
+      print-linter-name: true
+      print-issued-lines: true
+      colors: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  uniq-by-line: true
+
+linters:
+  default: standard
+  enable:
+    - errcheck
+    - staticcheck
+    - govet
+    - ineffassign
+
+    - gocritic
+    - revive
+    - gosec
+    - depguard
+    - bodyclose
+    - asciicheck
+    - cyclop
+    - dupl
+    - unparam
+    - errorlint
+    - errname
+    - forbidigo
+    - contextcheck
+    - containedctx
+    - noctx
+    - nolintlint
+    - prealloc
+    - wrapcheck
+
+  disable:
+    - gocyclo
+    - lll
+
+  exclusions:
+    generated: strict
+    rules:
+      - path: _test\.go
+        linters:
+          - cyclop
+          - dupl
+          - gosec
+          - wrapcheck
+          - unparam
+
+  settings:
+
+    gosec:
+      severity: medium
+      confidence: medium
+      config:
+        global:
+          audit: true
+          show-ignored: true
+
+    cyclop:
+      max-complexity: 20
+
+    depguard:
+      rules:
+        main:
+          deny:
+            - pkg: io/ioutil
+              desc: "Устаревший пакет, используйте os/io"
+
+    revive:
+      severity: warning
+
+    forbidigo:
+      analyze-types: true
+      forbid:
+        - pattern: ^print(ln)?$
+          msg: Do not commit print statements.
+
+        - pattern: ^fmt\.Print.*$
+          msg: Do not commit print statements.
+
+        - pattern: ^log\.Fatal.*$
+          msg: Do not terminate process from business code.
+
+        - pattern: ^os\.Exit.*$
+          msg: Do not terminate process from business code (allowed only in main.go).
+
+        - pattern: ^panic\(
+          msg: Use os.Exit(1) instead of panic in main.
+
+    gocritic:
+      enable-all: true
+      disabled-checks:
+        - hugeParam
+        - rangeValCopy
+        - importShadow
+
+    nolintlint:
+      require-explanation: true
+      allow-unused: false
+
+formatters:
+  enable:
+    - gofumpt
+    - gci
+  settings:
+    gofumpt:
+      extra-rules: true
+    gci:
+      sections:
+        - Standard
+        - Default
+        - Prefix(github.com/arseniizyk/food-analyser/backend)
+      no-inline-comments: false

@@ -1,0 +1,9 @@
+name: barcode
+in: path
+required: true
+description: Barcode продукта, для которого запрашивается анализ
+schema:
+  type: string
+  minLength: 1
+  maxLength: 15
+  example: "5901234123457"

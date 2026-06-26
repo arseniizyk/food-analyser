@@ -1,0 +1,20 @@
+type: object
+required:
+  - severity
+  - title
+  - description
+properties:
+  severity:
+    type: string
+    enum:
+      - low
+      - medium
+      - high
+
+  title:
+    type: string
+    example: High sugar
+
+  description:
+    type: string
+    example: Contains a significant amount of added sugar.

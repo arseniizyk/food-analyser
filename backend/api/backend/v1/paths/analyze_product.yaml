@@ -1,0 +1,45 @@
+parameters:
+  - $ref: ../params/barcode.yaml
+
+post:
+  summary: Analyze product nutrition photo
+  operationId: AnalyzeProduct
+  tags:
+    - Product, Analysis
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required:
+            - image
+          properties:
+            image:
+              type: string
+              format: binary
+  responses:
+    "200":
+      description: Analyze has competed successfully
+      content:
+        application/json:
+          schema:
+            $ref: ../components/analysis.yaml
+    '400':
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/errors/bad_request_error.yaml
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/errors/internal_server_error.yaml
+    default:
+      description: Unexpected error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/errors/generic_error.yaml

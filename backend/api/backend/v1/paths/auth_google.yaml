@@ -1,0 +1,26 @@
+post:
+  tags:
+    - Authentication
+  summary: Authenticate with Google
+  operationId: authenticateWithGoogle
+
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/auth_google_request.yaml
+
+  responses:
+    "200":
+      description: Authentication successful.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/auth_response.yaml
+
+    "401":
+      description: Invalid Google token.
+
+    "500":
+      description: Internal server error.

@@ -1,0 +1,37 @@
+type: object
+required:
+  - id
+  - score
+  - grade
+  - summary
+  - risks
+  - ingredients
+properties:
+  id:
+    type: string
+    example: product-45454545
+  score:
+    type: integer
+    description: Оценка продукта
+    minimum: 0
+    maximum: 100
+    example: 85
+  grade:
+    type: string
+    enum:
+      - excellent
+      - good
+      - average
+      - poor
+  summary:
+    type: array
+    items:
+      $ref: ./summary_item.yaml
+  risks:
+    type: array
+    items:
+      $ref: ./risk.yaml
+  ingredients:
+    type: array
+    items:
+      $ref: ./ingredient.yaml
