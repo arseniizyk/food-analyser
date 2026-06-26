@@ -1,1 +1,42 @@
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Go
 /backend/bin/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Flutter/Dart
+.flutter-plugins
+.flutter-plugins-dependencies
+*.lock
+
+# Docker
+docker-compose.override.yml
+
+# Env / secrets
+.env
+.env.*
+*.keystore
+*.jks
+key.properties
