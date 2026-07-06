@@ -10,8 +10,10 @@ import (
 )
 
 type Config struct {
-	HTTP     HTTPConfig     `env-prefix:"HTTP"`
-	Postgres PostgresConfig `env-prefix:"POSTGRES"`
+	MLConfig  MLConfig       `env-prefix:"ML"`
+	LLMConfig LLMConfig      `env-prefix:"LLM"`
+	HTTP      HTTPConfig     `env-prefix:"HTTP"`
+	Postgres  PostgresConfig `env-prefix:"POSTGRES"`
 }
 
 type HTTPConfig struct {
@@ -34,6 +36,15 @@ type PostgresConfig struct {
 	MinConns        int           `env:"MIN_CONNS" env-default:"2"`
 	MaxConnLifetime time.Duration `env:"MAX_CONN_LIFETIME" env-default:"5m"`
 	MaxConnIdleTime time.Duration `env:"MAX_CONN_IDLE_TIME" env-default:"1m"`
+}
+
+type MLConfig struct {
+	Port int    `env:"PORT" env-default:"8888"`
+	Host string `env:"HOST" env-default:"localhost"`
+}
+
+type LLMConfig struct {
+	// TODO
 }
 
 func (c HTTPConfig) Address() string {
