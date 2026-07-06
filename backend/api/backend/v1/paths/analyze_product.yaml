@@ -37,6 +37,12 @@ post:
         application/json:
           schema:
             $ref: ../components/errors/internal_server_error.yaml
+    '502':
+      description: LLM Service isn't responding
+      content:
+        application/json:
+          schema:
+            $ref: ../components/errors/bad_gateway_error.yaml
     default:
       description: Unexpected error
       content:
