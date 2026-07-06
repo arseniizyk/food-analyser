@@ -2,16 +2,16 @@ package auth
 
 import "net/http"
 
-type AuthService interface{}
+type Service interface{}
 
-type AuthHandler struct {
-	authService AuthService
+type Handler struct {
+	authService Service
 }
 
-func New(authService AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+func New(authService Service) *Handler {
+	return &Handler{authService: authService}
 }
 
-func (ah *AuthHandler) AuthenticateWithGoogle(w http.ResponseWriter, r *http.Request) {
+func (ah *Handler) AuthenticateWithGoogle(w http.ResponseWriter, r *http.Request) {
 	panic("not implemented")
 }

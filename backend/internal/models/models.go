@@ -51,3 +51,8 @@ type OCRResponse struct {
 		Confidence float64 `json:"confidence"`
 	} `json:"lines"`
 }
+
+type ErrorJSON struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
