@@ -39,8 +39,9 @@ type PostgresConfig struct {
 }
 
 type MLConfig struct {
-	Port int    `env:"PORT" env-default:"8888"`
-	Host string `env:"HOST" env-default:"localhost"`
+	Port    int           `env:"PORT" env-default:"8888"`
+	Host    string        `env:"HOST" env-default:"localhost"`
+	Timeout time.Duration `env:"TIMEOUT" env-default:"10s"`
 }
 
 type LLMConfig struct {
