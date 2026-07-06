@@ -13,11 +13,13 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/arseniizyk/food-analyser/backend/internal/config"
 	handler "github.com/arseniizyk/food-analyser/backend/internal/handler"
 	authHandler "github.com/arseniizyk/food-analyser/backend/internal/handler/auth"
+	"github.com/arseniizyk/food-analyser/backend/internal/handler/middlewares"
 	productHandler "github.com/arseniizyk/food-analyser/backend/internal/handler/product"
 	productRepository "github.com/arseniizyk/food-analyser/backend/internal/repository/product"
 	llmService "github.com/arseniizyk/food-analyser/backend/internal/service/llm"
@@ -41,6 +43,16 @@ func main() {
 	}
 
 	r := chi.NewRouter()
+
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	r.Use(
+		middleware.RequestID,
+		middlewares.RequestLogger(logger),
+		middleware.Recoverer,
+		middleware.Timeout(cfg.HTTP.ReadTimeout),
+		middleware.Compress(5),
+	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second) // Задержка может быть больше при первом запуске ML
 	defer cancel()
