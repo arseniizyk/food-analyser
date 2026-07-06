@@ -42,3 +42,12 @@ type SummaryItem struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
+
+type OCRResponse struct {
+	Text       string  `json:"text"`
+	Confidence float64 `json:"confidence"`
+	Lines      []struct {
+		Text       string  `json:"text"`
+		Confidence float64 `json:"confidence"`
+	} `json:"lines"`
+}

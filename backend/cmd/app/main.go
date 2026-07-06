@@ -20,6 +20,8 @@ import (
 	authHandler "github.com/arseniizyk/food-analyser/backend/internal/handler/auth"
 	productHandler "github.com/arseniizyk/food-analyser/backend/internal/handler/product"
 	productRepository "github.com/arseniizyk/food-analyser/backend/internal/repository/product"
+	llmService "github.com/arseniizyk/food-analyser/backend/internal/service/llm"
+	mlService "github.com/arseniizyk/food-analyser/backend/internal/service/ml"
 	productService "github.com/arseniizyk/food-analyser/backend/internal/service/product"
 	apiv1 "github.com/arseniizyk/food-analyser/backend/pkg/openapi/backend/v1"
 )
@@ -40,9 +42,19 @@ func main() {
 
 	r := chi.NewRouter()
 
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second) // Задержка может быть больше при первом запуске ML
+	defer cancel()
+	mlSvc, err := mlService.New(ctx, cfg.MLConfig)
+	if err != nil {
+		panic(fmt.Sprintf("error connecting ml service: %v", err))
+	}
+
+	llmSvc := llmService.New(cfg.LLMConfig)
+
 	productRepo := productRepository.New(pool)
-	productSvc := productService.New(productRepo)
+	productSvc := productService.New(productRepo, mlSvc, llmSvc)
 	productH := productHandler.New(productSvc)
+
 	authH := authHandler.New(nil)
 
 	h := handler.NewHandler(authH, productH)
@@ -70,7 +82,7 @@ func main() {
 	<-sigCh
 	slog.Info("shutting down...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {

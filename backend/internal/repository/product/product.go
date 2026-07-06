@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/arseniizyk/food-analyser/backend/internal/errs"
 	"github.com/arseniizyk/food-analyser/backend/internal/models"
 )
 
@@ -55,7 +56,7 @@ func (repo *Repository) GetAnalysisByBarcode(
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
+			return nil, errs.ErrAnalysisNotFound
 		}
 		return nil, fmt.Errorf("scan: %w", err)
 	}
