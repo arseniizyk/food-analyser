@@ -44,12 +44,12 @@ type MLConfig struct {
 }
 
 type LLMConfig struct {
-	// TODO
+	// TODO implement LLM Service
 }
 
-func (c HTTPConfig) Address() string {
-	return net.JoinHostPort(c.Host, strconv.Itoa(c.Port))
-}
+func (c MLConfig) Address() string { return net.JoinHostPort(c.Host, strconv.Itoa(c.Port)) }
+
+func (c HTTPConfig) Address() string { return net.JoinHostPort(c.Host, strconv.Itoa(c.Port)) }
 
 func (c PostgresConfig) ConnString() string {
 	return fmt.Sprintf(
