@@ -224,7 +224,6 @@ type MiddlewareFunc func(http.Handler) http.Handler
 
 // AnalyzeProduct operation middleware
 func (siw *ServerInterfaceWrapper) AnalyzeProduct(w http.ResponseWriter, r *http.Request) {
-
 	var err error
 	_ = err
 
@@ -250,7 +249,6 @@ func (siw *ServerInterfaceWrapper) AnalyzeProduct(w http.ResponseWriter, r *http
 
 // AuthenticateWithGoogle operation middleware
 func (siw *ServerInterfaceWrapper) AuthenticateWithGoogle(w http.ResponseWriter, r *http.Request) {
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AuthenticateWithGoogle(w, r)
 	}))
@@ -264,7 +262,6 @@ func (siw *ServerInterfaceWrapper) AuthenticateWithGoogle(w http.ResponseWriter,
 
 // GetAnalysisByBarcode operation middleware
 func (siw *ServerInterfaceWrapper) GetAnalysisByBarcode(w http.ResponseWriter, r *http.Request) {
-
 	var err error
 	_ = err
 

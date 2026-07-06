@@ -2,21 +2,20 @@ package product
 
 import "net/http"
 
-type ProductService interface {
+type Service interface{}
+
+type Handler struct {
+	Service Service
 }
 
-type ProductHandler struct {
-	productService ProductService
+func New(service Service) *Handler {
+	return &Handler{Service: service}
 }
 
-func New(productService *ProductService) *ProductHandler {
-	return &ProductHandler{productService: productService}
-}
-
-func (ph *ProductHandler) AnalyzeProduct(w http.ResponseWriter, r *http.Request, barcode string) {
+func (ph *Handler) AnalyzeProduct(w http.ResponseWriter, r *http.Request, barcode string) {
 	panic("not implemented")
 }
 
-func (ph *ProductHandler) GetAnalysisByBarcode(w http.ResponseWriter, r *http.Request, barcode string) {
+func (ph *Handler) GetAnalysisByBarcode(w http.ResponseWriter, r *http.Request, barcode string) {
 	panic("not implemented")
 }

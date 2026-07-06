@@ -6,20 +6,22 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/arseniizyk/food-analyser/backend/internal/config"
 	handler "github.com/arseniizyk/food-analyser/backend/internal/handler"
 	authHandler "github.com/arseniizyk/food-analyser/backend/internal/handler/auth"
 	productHandler "github.com/arseniizyk/food-analyser/backend/internal/handler/product"
+	productRepository "github.com/arseniizyk/food-analyser/backend/internal/repository/product"
+	productService "github.com/arseniizyk/food-analyser/backend/internal/service/product"
 	apiv1 "github.com/arseniizyk/food-analyser/backend/pkg/openapi/backend/v1"
-	"github.com/go-chi/chi/v5"
 )
 
 func main() {
@@ -30,16 +32,24 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("error building config: %v", err))
 	}
+
+	pool, err := pgxpool.New(context.Background(), cfg.Postgres.ConnString())
+	if err != nil {
+		panic(fmt.Sprintf("error connecting postgres: %v", err))
+	}
+
 	r := chi.NewRouter()
 
-	productH := productHandler.New(nil)
+	productRepo := productRepository.New(pool)
+	productSvc := productService.New(productRepo)
+	productH := productHandler.New(productSvc)
 	authH := authHandler.New(nil)
 
 	h := handler.NewHandler(authH, productH)
 
 	apiv1.HandlerFromMux(h, r)
 	server := http.Server{
-		Addr:              net.JoinHostPort(cfg.HTTP.Host, strconv.Itoa(cfg.HTTP.Port)),
+		Addr:              cfg.HTTP.Address(),
 		Handler:           r,
 		ReadTimeout:       cfg.HTTP.ReadTimeout,
 		ReadHeaderTimeout: cfg.HTTP.ReadHeaderTimeout,
@@ -54,7 +64,7 @@ func main() {
 		}
 	}()
 
-	sigCh := make(chan os.Signal)
+	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
 	<-sigCh

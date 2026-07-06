@@ -1,6 +1,9 @@
 package config
 
 import (
+	"fmt"
+	"net"
+	"strconv"
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
@@ -33,17 +36,37 @@ type PostgresConfig struct {
 	MaxConnIdleTime time.Duration `env:"MAX_CONN_IDLE_TIME" env-default:"1m"`
 }
 
+func (c HTTPConfig) Address() string {
+	return net.JoinHostPort(c.Host, strconv.Itoa(c.Port))
+}
+
+func (c PostgresConfig) ConnString() string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s?sslmode=%s&pool_max_conns=%d&pool_min_conns=%d&pool_max_conn_lifetime=%s&pool_max_conn_idle_time=%s",
+		c.User,
+		c.Password,
+		c.Host,
+		c.Port,
+		c.DBName,
+		c.SSLMode,
+		c.MaxConns,
+		c.MinConns,
+		c.MaxConnLifetime,
+		c.MaxConnIdleTime,
+	)
+}
+
 func New(path string) (*Config, error) {
 	var cfg Config
-	if len(path) > 0 {
+	if path != "" {
 		if err := cleanenv.ReadConfig(path, &cfg); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("reading cfg from file: %w", err)
 		}
 		return &cfg, nil
 	}
 
 	if err := cleanenv.ReadEnv(&cfg); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("reading cfg from env: %w", err)
 	}
 
 	return &cfg, nil

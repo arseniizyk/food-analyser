@@ -7,9 +7,9 @@ required:
   - risks
   - ingredients
 properties:
-  id:
+  barcode:
     type: string
-    example: product-45454545
+    example: 454545454545
   score:
     type: integer
     description: Оценка продукта

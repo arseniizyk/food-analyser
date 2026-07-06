@@ -2,8 +2,7 @@ package auth
 
 import "net/http"
 
-type AuthService interface {
-}
+type AuthService interface{}
 
 type AuthHandler struct {
 	authService AuthService
