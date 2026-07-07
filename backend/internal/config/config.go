@@ -14,6 +14,7 @@ type Config struct {
 	LLMConfig LLMConfig      `env-prefix:"LLM"`
 	HTTP      HTTPConfig     `env-prefix:"HTTP"`
 	Postgres  PostgresConfig `env-prefix:"POSTGRES"`
+	Google    GoogleConfig   `env-prefix:"GOOGLE"`
 }
 
 type HTTPConfig struct {
@@ -46,6 +47,10 @@ type MLConfig struct {
 
 type LLMConfig struct {
 	// TODO implement LLM Service
+}
+
+type GoogleConfig struct {
+	ClientID string `env:"OAUTH_CLIENT_ID" env-default:""`
 }
 
 func (c MLConfig) Address() string { return net.JoinHostPort(c.Host, strconv.Itoa(c.Port)) }

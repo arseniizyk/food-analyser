@@ -1,5 +1,11 @@
 package models
 
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
 type GradeLevel string
 
 const (
@@ -55,4 +61,10 @@ type OCRResponse struct {
 type ErrorJSON struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
+}
+
+type User struct {
+	ID        uuid.UUID
+	GoogleID  string
+	CreatedAt time.Time
 }

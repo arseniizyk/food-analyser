@@ -22,6 +22,8 @@ import (
 	"github.com/arseniizyk/food-analyser/backend/internal/handler/middlewares"
 	productHandler "github.com/arseniizyk/food-analyser/backend/internal/handler/product"
 	productRepository "github.com/arseniizyk/food-analyser/backend/internal/repository/product"
+	userRepository "github.com/arseniizyk/food-analyser/backend/internal/repository/user"
+	authService "github.com/arseniizyk/food-analyser/backend/internal/service/auth"
 	llmService "github.com/arseniizyk/food-analyser/backend/internal/service/llm"
 	mlService "github.com/arseniizyk/food-analyser/backend/internal/service/ml"
 	productService "github.com/arseniizyk/food-analyser/backend/internal/service/product"
@@ -67,7 +69,9 @@ func main() {
 	productSvc := productService.New(productRepo, mlSvc, llmSvc)
 	productH := productHandler.New(productSvc)
 
-	authH := authHandler.New(nil)
+	userRepo := userRepository.New(pool)
+	authSvc := authService.New(cfg.Google.ClientID, userRepo)
+	authH := authHandler.New(authSvc)
 
 	h := handler.NewHandler(authH, productH)
 

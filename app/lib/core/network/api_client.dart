@@ -147,10 +147,20 @@ class FakeApiClient implements ApiClient {
 
 /// Real HTTP API client that communicates with backend services.
 class HttpApiClient implements ApiClient {
-  HttpApiClient({required this.baseUrl, required this.ocrServiceUrl});
+  HttpApiClient({required this.baseUrl, required this.ocrServiceUrl, required SecureStorage secureStorage}) : _secureStorage = secureStorage;
 
   final String baseUrl;
   final String ocrServiceUrl;
+  final SecureStorage _secureStorage;
+
+  Future<Map<String, String>> _authHeaders() async {
+    final token = await _secureStorage.read('access_token');
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return headers;
+  }
 
   @override
   Future<Map<String, Object?>?> getProductByBarcode(String barcode) async {
@@ -218,10 +228,13 @@ class HttpApiClient implements ApiClient {
       if (!await file.exists()) {
         throw FileSystemException('File not found: $imagePath');
       }
-
       final uri = Uri.parse('$ocrServiceUrl/ocr');
       final request = http.MultipartRequest('POST', uri);
       request.files.add(await http.MultipartFile.fromPath('file', imagePath));
+
+      // Attach auth header if present
+      final headers = await _authHeaders();
+      request.headers.addAll(headers);
 
       final response = await request.send();
 
@@ -232,12 +245,13 @@ class HttpApiClient implements ApiClient {
       }
 
       final responseData = await response.stream.bytesToString();
-      // Parse JSON response
-      // Expected format: {"text": "...", "confidence": 0.9, "lines": [...]}
-      // For now, just return the raw response as text
       return responseData;
     } catch (e) {
       throw Exception('OCR request failed: $e');
     }
   }
+
+  // Note: other methods (getProductByBarcode, createProductFromIngredients,
+  // analyzeProduct, getHistory, getAnalysisById) are TODO and should use
+  // `_authHeaders()` to include `Authorization` header when implemented.
 }

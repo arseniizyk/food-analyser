@@ -11,11 +11,16 @@ import '../features/auth/domain/auth_repository.dart';
 /// Configuration for API services
 const String apiBaseUrl = 'http://localhost:8000'; // Backend API
 
+final secureStorageProvider = Provider<SecureStorage>(
+  (ref) => MemorySecureStorage(),
+);
+
 final apiClientProvider = Provider<ApiClient>((ref) {
-  // Use HttpApiClient for production, FakeApiClient for development
-  // Change this to HttpApiClient(baseUrl: apiBaseUrl, ocrServiceUrl: ocrServiceUrl)
-  // when backend is ready
-  return FakeApiClient();
+  return HttpApiClient(
+    baseUrl: Env.apiBaseUrl,
+    ocrServiceUrl: Env.ocrServiceUrl,
+    secureStorage: ref.read(secureStorageProvider),
+  );
 });
 
 final ocrApiClientProvider = Provider<ApiClient>((ref) {
@@ -29,9 +34,7 @@ final localStorageProvider = Provider<LocalStorage>(
   (ref) => MemoryLocalStorage(),
 );
 
-final secureStorageProvider = Provider<SecureStorage>(
-  (ref) => MemorySecureStorage(),
-);
+// (secureStorageProvider moved above so apiClientProvider can use it)
 
 final ocrServiceProvider = Provider<OcrService>((ref) {
   // OCR should be performed on a remote service; provide RemoteOcrService

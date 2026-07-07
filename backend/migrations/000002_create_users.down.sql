@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS user_scans;
+DROP TABLE IF EXISTS users;
