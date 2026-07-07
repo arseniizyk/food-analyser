@@ -6,11 +6,11 @@ import (
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/arseniizyk/food-analyser/backend/internal/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/arseniizyk/food-analyser/backend/internal/errs"
+	"github.com/arseniizyk/food-analyser/backend/internal/models"
 )
 
 type Repository struct {

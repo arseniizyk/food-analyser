@@ -81,7 +81,7 @@ func writeSuccess(w http.ResponseWriter, r *http.Request, status int, dataJSON a
 
 func writeError(w http.ResponseWriter, r *http.Request, status int, msg string) {
 	render.Status(r, status)
-	render.JSON(w, r, models.ErrorJSON{
+	render.JSON(w, r, errs.ErrorJSON{
 		Code:    status,
 		Message: msg,
 	})

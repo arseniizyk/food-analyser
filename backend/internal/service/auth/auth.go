@@ -15,15 +15,15 @@ type UserRepository interface {
 }
 
 type Service struct {
-	clientID string
-	users    UserRepository
+	clientID       string
+	userRepository UserRepository
+	httpClient     *http.Client
 }
 
 func New(clientID string, users UserRepository) *Service {
-	return &Service{clientID: clientID, users: users}
+	return &Service{clientID: clientID, userRepository: users}
 }
 
-// tokenInfo represents a subset of fields returned by Google's tokeninfo endpoint.
 type tokenInfo struct {
 	Aud              string `json:"aud"`
 	Sub              string `json:"sub"`
@@ -35,31 +35,32 @@ func (s *Service) Authenticate(ctx context.Context, idToken string) (string, err
 		return "", errors.New("empty id token")
 	}
 
-	// Verify ID token with Google's tokeninfo endpoint
-	resp, err := http.Get("https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://oauth2.googleapis.com/tokeninfo?id_token="+idToken, http.NoBody)
+	if err != nil {
+		return "", fmt.Errorf("http making request: %w", err)
+	}
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("verify token: %w", err)
 	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
 
-	var ti tokenInfo
-	if err := json.NewDecoder(resp.Body).Decode(&ti); err != nil {
-		return "", fmt.Errorf("decode tokeninfo: %w", err)
+	defer func() { _ = resp.Body.Close() }()
+
+	var token tokenInfo
+	if err := json.NewDecoder(resp.Body).Decode(&token); err != nil {
+		return "", fmt.Errorf("decode token info: %w", err)
 	}
-	if ti.ErrorDescription != "" {
-		return "", fmt.Errorf("token info error: %s", ti.ErrorDescription)
+	if token.ErrorDescription != "" {
+		return "", fmt.Errorf("token info error: %s", token.ErrorDescription)
 	}
-	if ti.Aud != s.clientID {
+	if token.Aud != s.clientID {
 		return "", fmt.Errorf("invalid audience")
 	}
-	if ti.Sub == "" {
+	if token.Sub == "" {
 		return "", fmt.Errorf("no subject in token")
 	}
 
-	// create or fetch user
-	u, err := s.users.CreateIfNotExists(ctx, ti.Sub)
+	u, err := s.userRepository.CreateIfNotExists(ctx, token.Sub)
 	if err != nil {
 		return "", fmt.Errorf("create/fetch user: %w", err)
 	}
