@@ -1,6 +1,5 @@
 import '../../../core/network/api_client.dart';
 import '../../../core/storage/local_storage.dart';
-import '../../product/domain/product.dart';
 import '../domain/analysis.dart';
 import '../domain/analysis_repository.dart';
 import 'analysis_dto.dart';
@@ -12,21 +11,21 @@ class RemoteAnalysisRepository implements AnalysisRepository {
 
   @override
   Future<Analysis> analyzeProduct({
-    required Product product,
-    required String userId,
-    required String ingredientsText,
+    required String barcode,
+    required String imagePath,
+    String? userId,
   }) async {
     final json = await _apiClient.analyzeProduct(
-      productId: product.id,
+      barcode: barcode,
+      imagePath: imagePath,
       userId: userId,
-      ingredientsText: ingredientsText,
     );
     return AnalysisDto.fromJson(json);
   }
 
   @override
   Future<Analysis?> getById(String analysisId) async {
-    final json = await _apiClient.getAnalysisById(analysisId);
+    final json = await _apiClient.getAnalysisByBarcode(analysisId);
     return json == null ? null : AnalysisDto.fromJson(json);
   }
 }
@@ -39,14 +38,14 @@ class LocalAnalysisRepository implements AnalysisRepository {
 
   @override
   Future<Analysis> analyzeProduct({
-    required Product product,
-    required String userId,
-    required String ingredientsText,
+    required String barcode,
+    required String imagePath,
+    String? userId,
   }) async {
     final json = await _apiClient.analyzeProduct(
-      productId: product.id,
+      barcode: barcode,
+      imagePath: imagePath,
       userId: userId,
-      ingredientsText: ingredientsText,
     );
     await _localStorage.saveAnalysis(json);
     return AnalysisDto.fromJson(json);

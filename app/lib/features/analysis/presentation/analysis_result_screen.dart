@@ -65,7 +65,7 @@ class _AnalysisResultBody extends StatelessWidget {
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         Text('Label: ${analysis.score.label}'),
-                        Text('Product: ${analysis.productId}'),
+                        Text('Barcode: ${analysis.barcode}'),
                       ],
                     ),
                   ),

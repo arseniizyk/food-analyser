@@ -30,10 +30,20 @@ class RemoteProductRepository implements ProductRepository {
     required String barcode,
     required String ingredientsText,
   }) async {
-    final json = await _apiClient.createProductFromIngredients(
-      barcode: barcode,
-      ingredientsText: ingredientsText,
-    );
+    final json = {
+      'id': 'product-${DateTime.now().microsecondsSinceEpoch}',
+      'barcode': barcode,
+      'name': 'Unknown product',
+      'brand': null,
+      'imageUrl': null,
+      'ingredients': ingredientsText
+          .split(',')
+          .map((item) => item.trim())
+          .where((item) => item.isNotEmpty)
+          .toList(),
+      'createdAt': DateTime.now().toIso8601String(),
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
     return ProductDto.fromJson(json);
   }
 }
@@ -70,10 +80,20 @@ class LocalProductRepository implements ProductRepository {
     required String barcode,
     required String ingredientsText,
   }) async {
-    final json = await _apiClient.createProductFromIngredients(
-      barcode: barcode,
-      ingredientsText: ingredientsText,
-    );
+    final json = {
+      'id': 'product-${DateTime.now().microsecondsSinceEpoch}',
+      'barcode': barcode,
+      'name': 'Unknown product',
+      'brand': null,
+      'imageUrl': null,
+      'ingredients': ingredientsText
+          .split(',')
+          .map((item) => item.trim())
+          .where((item) => item.isNotEmpty)
+          .toList(),
+      'createdAt': DateTime.now().toIso8601String(),
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
     await _localStorage.saveProduct(json);
     return ProductDto.fromJson(json);
   }

@@ -22,7 +22,7 @@ class HistoryItemTile extends StatelessWidget {
           foregroundColor: Colors.white,
           child: Text(analysis.score.value.toString()),
         ),
-        title: Text('Product ${analysis.productId}'),
+        title: Text('Barcode ${analysis.barcode}'),
         subtitle: Text(
           '${analysis.score.label} • ${analysis.createdAt.toLocal()}',
         ),

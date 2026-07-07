@@ -7,13 +7,7 @@ import '../data/history_repository_impl.dart';
 import '../domain/history_repository.dart';
 
 final historyRepositoryProvider = Provider<HistoryRepository>((ref) {
-  final user = ref.watch(authControllerProvider).value;
-
-  if (user == null || user.isGuest) {
-    return LocalHistoryRepository(ref.read(localStorageProvider));
-  }
-
-  return RemoteHistoryRepository(ref.read(apiClientProvider));
+  return LocalHistoryRepository(ref.read(localStorageProvider));
 });
 
 final historyControllerProvider =

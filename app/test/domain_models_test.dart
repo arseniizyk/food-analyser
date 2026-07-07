@@ -25,11 +25,13 @@ void main() {
   test('ScanSession tracks completed analysis state', () {
     final analysis = Analysis(
       id: 'analysis-1',
-      productId: 'product-1',
+      barcode: '460000000001',
       userId: 'guest-local',
+      grade: 'good',
       score: const HealthScore(value: 86, label: 'good'),
       risks: const [],
       summary: const ['Composition looks balanced.'],
+      ingredients: const ['oats', 'almonds', 'sugar'],
       createdAt: DateTime(2026, 1, 1),
     );
 

@@ -132,6 +132,10 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
 
     await _controller?.stop();
 
+    if (!mounted) {
+      return;
+    }
+
     // Ask user to confirm detected barcode before proceeding to avoid accidental scans
     final confirm = await showDialog<bool>(
       context: context,

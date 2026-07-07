@@ -145,13 +145,24 @@ class ScanController extends AsyncNotifier<ScanSession?> {
       return;
     }
 
+    final imagePath = session.ingredientsImagePath;
+    if (imagePath == null) {
+      state = AsyncError(
+        StateError('Image path is required for analysis.'),
+        StackTrace.current,
+      );
+      return;
+    }
+
     state = const AsyncLoading();
+    final userId = user.isGuest ? null : user.id;
     state = await AsyncValue.guard(() async {
       final updatedSession = await ref
           .read(analyzeProductUseCaseProvider)
           .call(
             session: session,
-            userId: user.id,
+            userId: userId,
+            imagePath: imagePath,
             ingredientsText: normalizedText,
           );
       _lastSession = updatedSession;

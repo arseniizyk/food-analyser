@@ -81,7 +81,7 @@ class _ResultBody extends StatelessWidget {
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 2),
-                    Text('Product ${analysis.productId}'),
+                    Text('Barcode ${analysis.barcode}'),
                   ],
                 ),
               ),

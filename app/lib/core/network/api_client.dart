@@ -1,24 +1,19 @@
-import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+
+import '../storage/secure_storage.dart';
 
 abstract interface class ApiClient {
   Future<Map<String, Object?>?> getProductByBarcode(String barcode);
 
-  Future<Map<String, Object?>> createProductFromIngredients({
-    required String barcode,
-    required String ingredientsText,
-  });
-
   Future<Map<String, Object?>> analyzeProduct({
-    required String productId,
-    required String userId,
-    required String ingredientsText,
+    required String barcode,
+    required String imagePath,
+    String? userId,
   });
 
-  Future<List<Map<String, Object?>>> getHistory(String userId);
-
-  Future<Map<String, Object?>?> getAnalysisById(String analysisId);
+  Future<Map<String, Object?>?> getAnalysisByBarcode(String barcode);
 
   Future<String?> ocrRecognizeImage(String imagePath);
 }
@@ -30,10 +25,10 @@ class FakeApiClient implements ApiClient {
       'barcode': '460000000001',
       'name': 'Protein Bar',
       'brand': 'Green Bite',
-      'imageUrl': null,
+      'score': 86,
+      'grade': 'good',
       'ingredients': ['oats', 'almonds', 'sugar', 'cocoa'],
       'createdAt': DateTime(2026, 1, 1).toIso8601String(),
-      'updatedAt': DateTime(2026, 1, 1).toIso8601String(),
     },
   };
 
@@ -46,63 +41,25 @@ class FakeApiClient implements ApiClient {
   }
 
   @override
-  Future<Map<String, Object?>> createProductFromIngredients({
-    required String barcode,
-    required String ingredientsText,
-  }) async {
-    await Future<void>.delayed(const Duration(milliseconds: 450));
-
-    final ingredients = _parseIngredients(ingredientsText);
-    final product = {
-      'id': 'product-${DateTime.now().microsecondsSinceEpoch}',
-      'barcode': barcode,
-      'name': 'Unknown product',
-      'brand': null,
-      'imageUrl': null,
-      'ingredients': ingredients,
-      'createdAt': DateTime.now().toIso8601String(),
-      'updatedAt': DateTime.now().toIso8601String(),
-    };
-
-    _productsByBarcode[barcode] = product;
-    return product;
-  }
-
-  @override
   Future<Map<String, Object?>> analyzeProduct({
-    required String productId,
-    required String userId,
-    required String ingredientsText,
+    required String barcode,
+    required String imagePath,
+    String? userId,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 700));
-
-    final ingredients = _parseIngredients(ingredientsText);
-    final risky = ingredients
-        .where((item) => item.contains('sugar') || item.contains('color'))
-        .toList();
-    final score = risky.isEmpty ? 86 : 58;
+    final score = 85;
     final analysis = {
       'id': 'analysis-${DateTime.now().microsecondsSinceEpoch}',
-      'productId': productId,
+      'barcode': barcode,
       'userId': userId,
-      'score': {'value': score, 'label': score >= 80 ? 'good' : 'medium'},
-      'risks': risky
-          .map(
-            (item) => {
-              'ingredient': item,
-              'level': item.contains('sugar') ? 'medium' : 'high',
-              'reason': item.contains('sugar')
-                  ? 'High sugar intake can be undesirable in daily diet.'
-                  : 'Artificial colorants may be sensitive for some users.',
-            },
-          )
-          .toList(),
+      'score': score,
+      'grade': score >= 80 ? 'good' : 'average',
       'summary': [
-        score >= 80
-            ? 'Composition looks balanced.'
-            : 'Composition has ingredients worth checking.',
-        'Detected ${ingredients.length} ingredients.',
+        'Composition looks balanced.',
+        'No major risks detected.',
       ],
+      'risks': [],
+      'ingredients': ['ingredient1', 'ingredient2'],
       'createdAt': DateTime.now().toIso8601String(),
     };
 
@@ -111,37 +68,18 @@ class FakeApiClient implements ApiClient {
   }
 
   @override
-  Future<List<Map<String, Object?>>> getHistory(String userId) async {
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    return _analyses.values
-        .where((analysis) => analysis['userId'] == userId)
-        .toList()
-      ..sort(
-        (a, b) =>
-            (b['createdAt']! as String).compareTo(a['createdAt']! as String),
-      );
-  }
-
-  @override
-  Future<Map<String, Object?>?> getAnalysisById(String analysisId) async {
+  Future<Map<String, Object?>?> getAnalysisByBarcode(String barcode) async {
     await Future<void>.delayed(const Duration(milliseconds: 250));
-    return _analyses[analysisId];
+    return _analyses.values.firstWhere(
+      (a) => a['barcode'] == barcode,
+      orElse: () => <String, Object?>{},
+    );
   }
 
   @override
   Future<String?> ocrRecognizeImage(String imagePath) async {
-    // Fake implementation: parse ingredients from image path or return placeholder.
     await Future<void>.delayed(const Duration(milliseconds: 600));
-    // In real implementation, this would upload the image bytes to OCR service.
-    return _parseIngredients(imagePath).join(', ');
-  }
-
-  List<String> _parseIngredients(String text) {
-    return text
-        .split(RegExp(r'[,;\n]'))
-        .map((item) => item.trim().toLowerCase())
-        .where((item) => item.isNotEmpty)
-        .toList();
+    return 'ingredient1, ingredient2, ingredient3';
   }
 }
 
@@ -150,8 +88,8 @@ class HttpApiClient implements ApiClient {
   HttpApiClient({
     required this.baseUrl,
     required this.ocrServiceUrl,
-    required SecureStorage secureStorage,
-  }) : _secureStorage = secureStorage;
+    required this._secureStorage,
+  });
 
   final String baseUrl;
   final String ocrServiceUrl;
@@ -168,61 +106,82 @@ class HttpApiClient implements ApiClient {
 
   @override
   Future<Map<String, Object?>?> getProductByBarcode(String barcode) async {
-    // TODO: Implement real API call
-    await Future<void>.delayed(const Duration(milliseconds: 450));
-    return null;
-  }
+    try {
+      final uri = Uri.parse('$baseUrl/api/v1/products/$barcode');
+      final headers = await _authHeaders();
+      final response = await http.get(uri, headers: headers);
 
-  @override
-  Future<Map<String, Object?>> createProductFromIngredients({
-    required String barcode,
-    required String ingredientsText,
-  }) async {
-    // TODO: Implement real API call
-    await Future<void>.delayed(const Duration(milliseconds: 450));
-    return {
-      'id': 'product-${DateTime.now().microsecondsSinceEpoch}',
-      'barcode': barcode,
-      'name': 'Unknown product',
-      'brand': null,
-      'imageUrl': null,
-      'ingredients': ingredientsText.split(','),
-      'createdAt': DateTime.now().toIso8601String(),
-      'updatedAt': DateTime.now().toIso8601String(),
-    };
+      if (response.statusCode == 404) {
+        return null;
+      }
+      if (response.statusCode != 200) {
+        throw Exception('Failed to get product: ${response.statusCode}');
+      }
+
+      return jsonDecode(response.body) as Map<String, Object?>?;
+    } catch (e) {
+      throw Exception('Error getting product by barcode: $e');
+    }
   }
 
   @override
   Future<Map<String, Object?>> analyzeProduct({
-    required String productId,
-    required String userId,
-    required String ingredientsText,
+    required String barcode,
+    required String imagePath,
+    String? userId,
   }) async {
-    // TODO: Implement real API call
-    await Future<void>.delayed(const Duration(milliseconds: 700));
-    return {
-      'id': 'analysis-${DateTime.now().microsecondsSinceEpoch}',
-      'productId': productId,
-      'userId': userId,
-      'score': {'value': 80, 'label': 'good'},
-      'risks': [],
-      'summary': ['Composition looks balanced.'],
-      'createdAt': DateTime.now().toIso8601String(),
-    };
+    try {
+      final file = File(imagePath);
+      if (!await file.exists()) {
+        throw FileSystemException('Image file not found: $imagePath');
+      }
+
+      final uri = Uri.parse('$baseUrl/api/v1/products/$barcode/analyze');
+      final request = http.MultipartRequest('POST', uri);
+
+      request.files.add(await http.MultipartFile.fromPath('file', imagePath));
+
+      if (userId != null && userId.isNotEmpty) {
+        request.fields['user_id'] = userId;
+      }
+
+      final headers = await _authHeaders();
+      request.headers.addAll(headers);
+
+      final response = await request.send();
+
+      if (response.statusCode != 200) {
+        final body = await response.stream.bytesToString();
+        throw Exception(
+          'Analyze request failed: ${response.statusCode} $body',
+        );
+      }
+
+      final responseBody = await response.stream.bytesToString();
+      return jsonDecode(responseBody) as Map<String, Object?>;
+    } catch (e) {
+      throw Exception('Error analyzing product: $e');
+    }
   }
 
   @override
-  Future<List<Map<String, Object?>>> getHistory(String userId) async {
-    // TODO: Implement real API call
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    return [];
-  }
+  Future<Map<String, Object?>?> getAnalysisByBarcode(String barcode) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/v1/products/$barcode/analysis');
+      final headers = await _authHeaders();
+      final response = await http.get(uri, headers: headers);
 
-  @override
-  Future<Map<String, Object?>?> getAnalysisById(String analysisId) async {
-    // TODO: Implement real API call
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-    return null;
+      if (response.statusCode == 404) {
+        return null;
+      }
+      if (response.statusCode != 200) {
+        throw Exception('Failed to get analysis: ${response.statusCode}');
+      }
+
+      return jsonDecode(response.body) as Map<String, Object?>?;
+    } catch (e) {
+      throw Exception('Error getting analysis: $e');
+    }
   }
 
   @override
@@ -254,8 +213,4 @@ class HttpApiClient implements ApiClient {
       throw Exception('OCR request failed: $e');
     }
   }
-
-  // Note: other methods (getProductByBarcode, createProductFromIngredients,
-  // analyzeProduct, getHistory, getAnalysisById) are TODO and should use
-  // `_authHeaders()` to include `Authorization` header when implemented.
 }

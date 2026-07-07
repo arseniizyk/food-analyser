@@ -8,7 +8,8 @@ abstract interface class ScanRepository {
 
   Future<ScanSession> analyzeIngredients({
     required ScanSession session,
-    required String userId,
+    String? userId,
+    required String imagePath,
     required String ingredientsText,
   });
 

@@ -35,25 +35,17 @@ class ScanRepositoryImpl implements ScanRepository {
       return session.copyWith(step: ScanStep.productMissing);
     }
 
-    final ingredientsText = product.ingredients.join(', ');
-    final analysis = await analysisRepository.analyzeProduct(
-      product: product,
-      userId: userId,
-      ingredientsText: ingredientsText,
-    );
-
     return session.copyWith(
       product: product,
-      extractedText: ingredientsText,
-      analysis: analysis,
-      step: ScanStep.completed,
+      step: ScanStep.ingredientsScanning,
     );
   }
 
   @override
   Future<ScanSession> analyzeIngredients({
     required ScanSession session,
-    required String userId,
+    String? userId,
+    required String imagePath,
     required String ingredientsText,
   }) async {
     final product = await productRepository.createFromIngredients(
@@ -61,9 +53,9 @@ class ScanRepositoryImpl implements ScanRepository {
       ingredientsText: ingredientsText,
     );
     final analysis = await analysisRepository.analyzeProduct(
-      product: product,
+      barcode: product.barcode,
+      imagePath: imagePath,
       userId: userId,
-      ingredientsText: ingredientsText,
     );
 
     return session.copyWith(

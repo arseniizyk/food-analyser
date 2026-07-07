@@ -27,6 +27,7 @@ final ocrApiClientProvider = Provider<ApiClient>((ref) {
   return HttpApiClient(
     baseUrl: Env.apiBaseUrl,
     ocrServiceUrl: Env.ocrServiceUrl,
+    secureStorage: ref.read(secureStorageProvider),
   );
 });
 
