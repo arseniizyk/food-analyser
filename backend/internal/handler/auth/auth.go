@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/arseniizyk/food-analyser/backend/internal/errs"
+	"github.com/arseniizyk/food-analyser/backend/internal/handler/utils"
 )
 
 type Service interface {
@@ -20,23 +20,19 @@ func New(authService Service) *Handler {
 	return &Handler{authService: authService}
 }
 
+// AuthenticateWithGoogle TODO logs
 func (ah *Handler) AuthenticateWithGoogle(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		IdToken string `json:"id_token"`
-	}
+	var body GoogleAuthRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(errs.ErrorJSON{Code: http.StatusBadRequest, Message: "invalid body"})
+		utils.WriteError(w, r, http.StatusBadRequest, "invalid body")
 		return
 	}
 
-	userID, err := ah.authService.Authenticate(r.Context(), body.IdToken)
+	userID, err := ah.authService.Authenticate(r.Context(), body.IDToken)
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		_ = json.NewEncoder(w).Encode(errs.ErrorJSON{Code: http.StatusUnauthorized, Message: err.Error()})
+		utils.WriteError(w, r, http.StatusUnauthorized, "failed to authenticate")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{"user_id": userID})
+	utils.WriteSuccess(w, r, http.StatusOK, GoogleAuthResponse{userID})
 }

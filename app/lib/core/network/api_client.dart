@@ -147,7 +147,11 @@ class FakeApiClient implements ApiClient {
 
 /// Real HTTP API client that communicates with backend services.
 class HttpApiClient implements ApiClient {
-  HttpApiClient({required this.baseUrl, required this.ocrServiceUrl, required SecureStorage secureStorage}) : _secureStorage = secureStorage;
+  HttpApiClient({
+    required this.baseUrl,
+    required this.ocrServiceUrl,
+    required SecureStorage secureStorage,
+  }) : _secureStorage = secureStorage;
 
   final String baseUrl;
   final String ocrServiceUrl;

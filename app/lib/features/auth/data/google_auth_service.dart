@@ -33,7 +33,9 @@ class GoogleAuthService {
     );
 
     if (resp.statusCode != 200) {
-      throw Exception('Backend authentication failed: ${resp.statusCode} ${resp.body}');
+      throw Exception(
+        'Backend authentication failed: ${resp.statusCode} ${resp.body}',
+      );
     }
 
     final data = jsonDecode(resp.body) as Map<String, dynamic>;
