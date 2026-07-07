@@ -36,6 +36,9 @@ func (h *Handler) AnalyzeProduct(w http.ResponseWriter, r *http.Request, barcode
 	}
 	defer func() { _ = file.Close() }()
 
+	// Optional user_id is accepted by the spec for future server-side history storage.
+	_ = r.FormValue("user_id")
+
 	analysis, err := h.Service.AnalyzeProduct(ctx, barcode, file)
 	if err != nil {
 		if errors.Is(err, errs.ErrRecognizeFromImage) {

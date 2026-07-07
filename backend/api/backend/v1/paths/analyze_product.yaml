@@ -18,6 +18,9 @@ post:
             image:
               type: string
               format: binary
+            user_id:
+              type: string
+              description: Optional user ID (if authenticated). If not provided, analysis is stored only locally on client.
   responses:
     "200":
       description: Analyze has competed successfully

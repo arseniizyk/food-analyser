@@ -3,8 +3,9 @@ package utils
 import (
 	"net/http"
 
-	"github.com/arseniizyk/food-analyser/backend/internal/errs"
 	"github.com/go-chi/render"
+
+	"github.com/arseniizyk/food-analyser/backend/internal/errs"
 )
 
 func WriteSuccess(w http.ResponseWriter, r *http.Request, status int, dataJSON any) {
