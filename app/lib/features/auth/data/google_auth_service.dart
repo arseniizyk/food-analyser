@@ -22,29 +22,41 @@ class GoogleAuthService {
     final accessToken = authentication.accessToken ?? '';
 
     if (idToken == null || idToken.isEmpty) {
-      throw Exception('Missing id token from Google sign-in');
-    }
-
-    final uri = Uri.parse('${Env.apiBaseUrl}/api/v1/auth/google');
-    final resp = await http.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'id_token': idToken}),
-    );
-
-    if (resp.statusCode != 200) {
       throw Exception(
-        'Backend authentication failed: ${resp.statusCode} ${resp.body}',
+        'Missing id token from Google sign-in. '
+        'Make sure google-services.json is properly configured '
+        'and the WebClientId matches your Google Cloud Console settings.',
       );
     }
 
-    final data = jsonDecode(resp.body) as Map<String, dynamic>;
-    final userId = data['user_id'] as String? ?? '';
+    final uri = Uri.parse('${Env.apiBaseUrl}/api/v1/auth/google');
 
-    return AuthorizedUser(
-      id: userId,
-      email: account.email,
-      accessToken: accessToken,
-    );
+    try {
+      final resp = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'id_token': idToken}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (resp.statusCode != 200) {
+        throw Exception(
+          'Backend authentication failed: ${resp.statusCode} - ${resp.body}. '
+          'Make sure backend is running at $uri and OAUTH_CLIENT_ID is configured.',
+        );
+      }
+
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      final userId = data['user_id'] as String? ?? '';
+
+      return AuthorizedUser(
+        id: userId,
+        email: account.email,
+        accessToken: accessToken,
+      );
+    } catch (e) {
+      throw Exception('Failed to authenticate with backend: $e');
+    }
   }
 }

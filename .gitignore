@@ -40,3 +40,7 @@ docker-compose.override.yml
 *.keystore
 *.jks
 key.properties
+
+# Google Services (contains client IDs - never commit!)
+app/android/app/google-services.json
+app/ios/Runner/GoogleService-Info.plist

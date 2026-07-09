@@ -3,7 +3,7 @@ class Env {
 
   static const apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://api.food-analyzer.local',
+    defaultValue: 'http://localhost:8000',
   );
 
   static const ocrServiceUrl = String.fromEnvironment(
