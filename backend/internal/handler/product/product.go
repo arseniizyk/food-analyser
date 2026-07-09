@@ -17,12 +17,20 @@ type Service interface {
 	AnalyzeProduct(ctx context.Context, barcode string, image io.Reader) (*models.Analysis, error)
 }
 
-type Handler struct {
-	Service Service
+type UserService interface {
+	AddScan(ctx context.Context, userID string, barcode string) error
 }
 
-func New(service Service) *Handler {
-	return &Handler{Service: service}
+type Handler struct {
+	userService UserService
+	service     Service
+}
+
+func New(service Service, userService UserService) *Handler {
+	return &Handler{
+		service:     service,
+		userService: userService,
+	}
 }
 
 func (h *Handler) AnalyzeProduct(w http.ResponseWriter, r *http.Request, barcode string) {
@@ -36,10 +44,9 @@ func (h *Handler) AnalyzeProduct(w http.ResponseWriter, r *http.Request, barcode
 	}
 	defer func() { _ = file.Close() }()
 
-	// Optional user_id is accepted by the spec for future server-side history storage.
-	_ = r.FormValue("user_id")
+	userID := r.FormValue("user_id")
 
-	analysis, err := h.Service.AnalyzeProduct(ctx, barcode, file)
+	analysis, err := h.service.AnalyzeProduct(ctx, barcode, file)
 	if err != nil {
 		if errors.Is(err, errs.ErrRecognizeFromImage) {
 			utils.WriteError(w, r, http.StatusBadRequest, "can't recognize text from image")
@@ -55,6 +62,12 @@ func (h *Handler) AnalyzeProduct(w http.ResponseWriter, r *http.Request, barcode
 		return
 	}
 
+	if userID != "" {
+		if err := h.userService.AddScan(ctx, userID, barcode); err != nil {
+			// todo: logging
+		}
+	}
+
 	utils.WriteSuccess(w, r, http.StatusOK, analysis)
 }
 
@@ -62,7 +75,7 @@ func (h *Handler) GetAnalysisByBarcode(w http.ResponseWriter, r *http.Request, b
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
-	analysis, err := h.Service.GetAnalysisByBarcode(ctx, barcode)
+	analysis, err := h.service.GetAnalysisByBarcode(ctx, barcode)
 	if err != nil {
 		if errors.Is(err, errs.ErrAnalysisNotFound) {
 			utils.WriteError(w, r, http.StatusNotFound, "analysis was not found")

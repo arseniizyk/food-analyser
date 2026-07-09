@@ -57,18 +57,24 @@ func (r *Repository) CreateIfNotExists(ctx context.Context, googleID string) (*m
 	return &models.User{ID: id, GoogleID: googleID, CreatedAt: now}, nil
 }
 
-func (r *Repository) AddScan(ctx context.Context, userID uuid.UUID, barcode string) error {
+func (r *Repository) AddScan(ctx context.Context, userID string, barcode string) error {
 	query, args, err := r.sb.Insert("user_scans").Columns("user_id", "barcode", "created_at").Values(userID, barcode, time.Now().UTC()).ToSql()
 	if err != nil {
 		return fmt.Errorf("build insert scan: %w", err)
 	}
-	if _, err := r.pool.Exec(ctx, query, args...); err != nil {
+
+	cmd, err := r.pool.Exec(ctx, query, args...)
+	if err != nil {
 		return fmt.Errorf("exec insert scan: %w", err)
 	}
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("failed to add scan: %w", err)
+	}
+
 	return nil
 }
 
-func (r *Repository) GetScans(ctx context.Context, userID uuid.UUID) ([]string, error) {
+func (r *Repository) GetScans(ctx context.Context, userID string) ([]string, error) {
 	query, args, err := r.sb.Select("barcode").From("user_scans").Where(sq.Eq{"user_id": userID}).OrderBy("created_at DESC").ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("build query scans: %w", err)
