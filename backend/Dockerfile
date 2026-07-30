@@ -37,6 +37,7 @@ ENTRYPOINT ["/app"]
 FROM gcr.io/distroless/static-debian12 AS migrate
 
 COPY --from=builder /out/migrate /migrate
+COPY --from=builder /app/migrations /migrations
 
 USER nonroot:nonroot
 

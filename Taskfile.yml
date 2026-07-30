@@ -1,0 +1,68 @@
+version: "3"
+
+includes:
+  backend:
+    taskfile: ./backend/Taskfile.yml
+    dir: ./backend
+  ml:
+    taskfile: ./ml/Taskfile.yml
+    dir: ./ml
+
+tasks:
+  default:
+    desc: "Show available tasks"
+    cmds:
+      - task --list
+
+  up:
+    desc: "Start all microservices with Docker Compose"
+    cmds:
+      - docker compose up -d --build
+
+  down:
+    desc: "Stop all Docker Compose microservices"
+    cmds:
+      - docker compose down
+
+  logs:
+    desc: "Follow Docker Compose logs"
+    cmds:
+      - docker compose logs -f
+
+  ps:
+    desc: "List running containers"
+    cmds:
+      - docker compose ps
+
+  restart:
+    desc: "Restart Docker Compose services"
+    cmds:
+      - docker compose restart
+
+  lint:
+    desc: "Run linters for backend and ml services"
+    cmds:
+      - task: backend:lint
+
+  format:
+    desc: "Format Go code in backend"
+    cmds:
+      - task: backend:format
+
+  app:deps:
+    desc: "Install Flutter dependencies for mobile app"
+    dir: app
+    cmds:
+      - flutter pub get
+
+  app:run:
+    desc: "Run Flutter mobile app locally"
+    dir: app
+    cmds:
+      - flutter run
+
+  app:build:
+    desc: "Build Flutter APK release binary"
+    dir: app
+    cmds:
+      - flutter build apk --release
