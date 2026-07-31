@@ -45,3 +45,5 @@ key.properties
 app/android/app/google-services.json
 app/ios/Runner/GoogleService-Info.plist
 backend/configs/dev.env
+bin
+.claude

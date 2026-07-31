@@ -9,6 +9,13 @@ includes:
     dir: ./ml
 
 tasks:
+  run:
+    desc: "Run flutter app"
+    dir: app
+    cmds: 
+      - flutter clean
+      - flutter run
+
   default:
     desc: "Show available tasks"
     cmds:

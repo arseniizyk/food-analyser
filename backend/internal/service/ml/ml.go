@@ -8,7 +8,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"strings"
 
 	"github.com/arseniizyk/food-analyser/backend/internal/config"
 	"github.com/arseniizyk/food-analyser/backend/internal/models"
@@ -21,11 +20,12 @@ type Service struct {
 
 func New(ctx context.Context, cfg config.MLConfig) (*Service, error) {
 	address := cfg.Address()
+	baseURL := "http://" + address
 	service := &Service{
 		client:   &http.Client{Timeout: cfg.Timeout},
-		endpoint: strings.TrimRight(address, "/") + "/ocr",
+		endpoint: baseURL + "/ocr",
 	}
-	if err := service.ping(ctx, address); err != nil {
+	if err := service.ping(ctx, baseURL); err != nil {
 		return nil, err
 	}
 
@@ -91,7 +91,7 @@ func (s *Service) GetTextFromPhoto(ctx context.Context, image io.Reader) (string
 }
 
 func (s *Service) ping(ctx context.Context, address string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(address, "/")+"/health", http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, address+"/health", http.NoBody)
 	if err != nil {
 		return fmt.Errorf("ping %s: %w", address, err)
 	}
