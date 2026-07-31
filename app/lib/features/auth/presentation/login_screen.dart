@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/app_theme.dart';
 import 'auth_controller.dart';
 
 class LoginScreen extends ConsumerWidget {
@@ -10,36 +11,51 @@ class LoginScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState.isLoading;
+    final theme = Theme.of(context);
 
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
+            constraints: const BoxConstraints(maxWidth: 400),
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppSpacing.xxl),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
-                    Icons.restaurant_menu,
-                    size: 56,
-                    color: Theme.of(context).colorScheme.primary,
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withValues(
+                        alpha: 0.4,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.restaurant_menu,
+                      size: 36,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.xxl),
                   Text(
                     'FoodCheck',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineMedium,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     'Analyze product composition by barcode and ingredients.',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: AppSpacing.xxxl),
                   FilledButton.icon(
                     onPressed: isLoading
                         ? null
@@ -49,7 +65,7 @@ class LoginScreen extends ConsumerWidget {
                     icon: const Icon(Icons.login),
                     label: const Text('Continue with Google'),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   OutlinedButton.icon(
                     onPressed: isLoading
                         ? null
@@ -60,17 +76,24 @@ class LoginScreen extends ConsumerWidget {
                     label: const Text('Continue as Guest'),
                   ),
                   if (authState.hasError) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      authState.error.toString(),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+                    const SizedBox(height: AppSpacing.lg),
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.errorContainer,
+                        borderRadius: AppRadius.smAll,
+                      ),
+                      child: Text(
+                        authState.error.toString(),
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onErrorContainer,
+                        ),
                       ),
                     ),
                   ],
                   if (isLoading) ...[
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppSpacing.xxl),
                     const Center(child: CircularProgressIndicator()),
                   ],
                 ],

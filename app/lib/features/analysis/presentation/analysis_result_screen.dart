@@ -112,10 +112,10 @@ class _RiskTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        leading: Icon(_iconForRisk(risk.level)),
-        title: Text(risk.ingredient),
-        subtitle: Text(risk.reason),
-        trailing: Text(risk.level.name),
+        leading: Icon(_iconForRisk(risk.severity)),
+        title: Text(risk.title),
+        subtitle: Text(risk.description),
+        trailing: Text(risk.severity.name),
       ),
     );
   }

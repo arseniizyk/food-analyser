@@ -10,4 +10,6 @@ abstract interface class AuthRepository {
   Future<AppUser> continueAsGuest();
 
   Future<void> signOut();
+
+  void dispose();
 }

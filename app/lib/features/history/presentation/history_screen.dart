@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_loading_view.dart';
 import '../../analysis/domain/analysis.dart';
@@ -22,6 +23,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final historyState = ref.watch(historyControllerProvider);
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -52,31 +54,54 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             onRefresh: () =>
                 ref.read(historyControllerProvider.notifier).refresh(),
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPadding,
+                AppSpacing.sm,
+                AppSpacing.screenPadding,
+                AppSpacing.xxxl,
+              ),
               children: [
-                _SyncBanner(isOffline: false),
-                const SizedBox(height: 12),
                 _FilterBar(
                   selected: _filter,
                   onSelected: (filter) => setState(() => _filter = filter),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 if (filteredItems.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Center(child: Text('No scans match this filter.')),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.xxxl,
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.filter_list_off,
+                            size: 40,
+                            color: theme.colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.5),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          Text(
+                            'No scans match this filter.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   )
                 else
                   ...filteredItems.map(
                     (analysis) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                       child: HistoryItemTile(
                         analysis: analysis,
                         onTap: () => showAnalysisResultBottomSheet(
                           context: context,
-                          analysisId: analysis.id,
+                          analysisId: analysis.barcode,
                           onScanAnother: () {
-                            Navigator.of(context).pop();
                             context.go('/app/scan');
                           },
                         ),
@@ -114,83 +139,28 @@ class _FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: _HistoryFilter.values.map((filter) {
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              selected: selected == filter,
-              onSelected: (_) => onSelected(filter),
-              label: Text(filter.label),
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _HistoryFilter.values.length,
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+        itemBuilder: (context, index) {
+          final filter = _HistoryFilter.values[index];
+          final isSelected = selected == filter;
+          final theme = Theme.of(context);
+
+          return ChoiceChip(
+            label: Text(filter.label),
+            selected: isSelected,
+            onSelected: (_) => onSelected(filter),
+            labelStyle: theme.textTheme.labelMedium?.copyWith(
+              color: isSelected
+                  ? theme.colorScheme.onPrimaryContainer
+                  : theme.colorScheme.onSurface,
             ),
           );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _SyncBanner extends StatelessWidget {
-  const _SyncBanner({required this.isOffline});
-
-  final bool isOffline;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(isOffline ? Icons.cloud_off : Icons.cloud_done_outlined),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              isOffline
-                  ? 'Showing cached scans. New results will sync later.'
-                  : 'History is up to date for the current account mode.',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyHistory extends StatelessWidget {
-  const _EmptyHistory({required this.onScan});
-
-  final VoidCallback onScan;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.history, size: 48),
-            const SizedBox(height: 12),
-            Text('No scans yet', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 6),
-            const Text(
-              'Analyze a product to see score, risks, and details here.',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 18),
-            FilledButton.icon(
-              onPressed: onScan,
-              icon: const Icon(Icons.qr_code_scanner),
-              label: const Text('Scan product'),
-            ),
-          ],
-        ),
+        },
       ),
     );
   }
@@ -205,4 +175,62 @@ enum _HistoryFilter {
   const _HistoryFilter(this.label);
 
   final String label;
+}
+
+class _EmptyHistory extends StatelessWidget {
+  const _EmptyHistory({required this.onScan});
+
+  final VoidCallback onScan;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer.withValues(
+                  alpha: 0.3,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.history,
+                size: 40,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Text(
+              'No scans yet',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Analyze a product to see score, risks, and details here.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xxl),
+            FilledButton.icon(
+              onPressed: onScan,
+              icon: const Icon(Icons.qr_code_scanner),
+              label: const Text('Scan product'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

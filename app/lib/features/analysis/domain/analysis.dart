@@ -23,19 +23,60 @@ class Analysis {
 
   factory Analysis.fromJson(Map<String, Object?> json) {
     return Analysis(
-      id: json['id']! as String,
-      barcode: json['barcode']! as String,
+      id: json['id'] as String? ?? '',
+      barcode: json['barcode'] as String? ?? '',
       userId: json['userId'] as String?,
-      score: HealthScore.fromJson(json['score']! as Map<String, Object?>),
-      grade: json['grade']! as String,
-      risks: (json['risks']! as List<Object?>)
-          .cast<Map<String, Object?>>()
-          .map(IngredientRisk.fromJson)
-          .toList(),
-      summary: (json['summary']! as List<Object?>).cast<String>(),
-      createdAt: DateTime.parse(json['createdAt']! as String),
-      ingredients: (json['ingredients']! as List<Object?>).cast<String>(),
+      score: HealthScore.fromJson(json['score']),
+      grade: json['grade'] as String? ?? 'average',
+      risks: _parseRisks(json['risks']),
+      summary: _parseSummary(json['summary']),
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
+          : DateTime.now(),
+      ingredients: _parseIngredients(json['ingredients']),
     );
+  }
+
+  static List<IngredientRisk> _parseRisks(Object? value) {
+    if (value is List) {
+      return value
+          .whereType<Map<String, Object?>>()
+          .map(IngredientRisk.fromJson)
+          .toList();
+    }
+    return [];
+  }
+
+  static List<String> _parseSummary(Object? value) {
+    if (value is! List) return [];
+    final results = <String>[];
+    for (final item in value) {
+      if (item is String) {
+        results.add(item);
+      } else if (item is Map<String, Object?>) {
+        final message = item['message'] as String?;
+        if (message != null && message.isNotEmpty) {
+          results.add(message);
+        }
+      }
+    }
+    return results;
+  }
+
+  static List<String> _parseIngredients(Object? value) {
+    if (value is! List) return [];
+    final results = <String>[];
+    for (final item in value) {
+      if (item is String) {
+        results.add(item);
+      } else if (item is Map<String, Object?>) {
+        final name = item['name'] as String?;
+        if (name != null && name.isNotEmpty) {
+          results.add(name);
+        }
+      }
+    }
+    return results;
   }
 
   Map<String, Object?> toJson() {
@@ -64,11 +105,14 @@ class HealthScore {
       return HealthScore(value: json, label: json >= 80 ? 'good' : 'average');
     }
 
-    final map = json as Map<String, Object?>;
-    return HealthScore(
-      value: map['value']! as int,
-      label: map['label']! as String,
-    );
+    if (json is Map<String, Object?>) {
+      return HealthScore(
+        value: json['value'] as int? ?? 0,
+        label: json['label'] as String? ?? 'unknown',
+      );
+    }
+
+    return const HealthScore(value: 0, label: 'unknown');
   }
 
   Map<String, Object?> toJson() {
@@ -78,25 +122,39 @@ class HealthScore {
 
 class IngredientRisk {
   const IngredientRisk({
-    required this.ingredient,
-    required this.level,
-    required this.reason,
+    required this.title,
+    required this.severity,
+    required this.description,
   });
 
-  final String ingredient;
-  final RiskLevel level;
-  final String reason;
+  final String title;
+  final RiskLevel severity;
+  final String description;
 
   factory IngredientRisk.fromJson(Map<String, Object?> json) {
     return IngredientRisk(
-      ingredient: json['ingredient']! as String,
-      level: RiskLevel.values.byName(json['level']! as String),
-      reason: json['reason']! as String,
+      title: json['title'] as String? ?? 'Unknown',
+      severity: _parseRiskLevel(json['severity']),
+      description: json['description'] as String? ?? '',
     );
   }
 
+  static RiskLevel _parseRiskLevel(Object? value) {
+    if (value is String) {
+      return RiskLevel.values.firstWhere(
+        (e) => e.name == value,
+        orElse: () => RiskLevel.low,
+      );
+    }
+    return RiskLevel.low;
+  }
+
   Map<String, Object?> toJson() {
-    return {'ingredient': ingredient, 'level': level.name, 'reason': reason};
+    return {
+      'title': title,
+      'severity': severity.name,
+      'description': description,
+    };
   }
 }
 

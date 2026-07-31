@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Simple movable and scalable selection overlay.
 class MovableSelectionOverlay extends StatefulWidget {
   const MovableSelectionOverlay({this.onChanged, super.key});
 
@@ -12,289 +11,261 @@ class MovableSelectionOverlay extends StatefulWidget {
 }
 
 class _MovableSelectionOverlayState extends State<MovableSelectionOverlay> {
-  // Position and size as fractions of parent size.
   Offset _center = const Offset(0.5, 0.4);
   double _widthFraction = 0.8;
   double _heightFraction = 0.35;
 
-  Rect? _moveStartRect;
-  Rect? _resizeStartRect;
-  _Handle? _activeHandle;
+  Size _parentSize = Size.zero;
+  bool _initialEmitted = false;
 
-  void _emitChange(Size parentSize) {
-    widget.onChanged?.call(
-      Rect.fromLTWH(
-        _currentRect(parentSize).left / parentSize.width,
-        _currentRect(parentSize).top / parentSize.height,
-        _currentRect(parentSize).width / parentSize.width,
-        _currentRect(parentSize).height / parentSize.height,
+  // Синхронизируем радиус маркера и радиус хит-теста
+  static const double _handleRadius = 24;
+
+  Rect get _frameRect {
+    final w = _parentSize.width * _widthFraction;
+    final h = _parentSize.height * _heightFraction;
+    return Rect.fromCenter(
+      center: Offset(
+        _center.dx * _parentSize.width,
+        _center.dy * _parentSize.height,
       ),
+      width: w,
+      height: h,
     );
   }
 
-  Rect _currentRect(Size parentSize) {
-    final frameSize = Size(
-      parentSize.width * _widthFraction,
-      parentSize.height * _heightFraction,
+  Rect _normalizedRect(Rect r) {
+    // Защита от деления на 0 при нулевых размерах родителя
+    if (_parentSize.width <= 0 || _parentSize.height <= 0) {
+      return const Rect.fromLTRB(0.1, 0.3, 0.9, 0.65);
+    }
+    return Rect.fromLTRB(
+      (r.left / _parentSize.width).clamp(0.0, 1.0),
+      (r.top / _parentSize.height).clamp(0.0, 1.0),
+      (r.right / _parentSize.width).clamp(0.0, 1.0),
+      (r.bottom / _parentSize.height).clamp(0.0, 1.0),
     );
-    final topLeft = Offset(
-      _center.dx * parentSize.width - frameSize.width / 2,
-      _center.dy * parentSize.height - frameSize.height / 2,
-    );
-    return topLeft & frameSize;
   }
 
-  Rect _clampRect(Rect rect, Size parentSize) {
-    final minWidth = parentSize.width * 0.3;
-    final minHeight = parentSize.height * 0.2;
-    final maxWidth = parentSize.width * 0.95;
-    final maxHeight = parentSize.height * 0.9;
-
-    var left = rect.left;
-    var top = rect.top;
-    var right = rect.right;
-    var bottom = rect.bottom;
-
-    if (right - left < minWidth) right = left + minWidth;
-    if (bottom - top < minHeight) bottom = top + minHeight;
-
-    if (right - left > maxWidth) right = left + maxWidth;
-    if (bottom - top > maxHeight) bottom = top + maxHeight;
-
-    if (left < 0) {
-      right -= left;
-      left = 0;
+  void _emitChange() {
+    if (_parentSize.width > 0 && _parentSize.height > 0) {
+      widget.onChanged?.call(_normalizedRect(_frameRect));
     }
-    if (top < 0) {
-      bottom -= top;
-      top = 0;
-    }
-    if (right > parentSize.width) {
-      left -= right - parentSize.width;
-      right = parentSize.width;
-    }
-    if (bottom > parentSize.height) {
-      top -= bottom - parentSize.height;
-      bottom = parentSize.height;
-    }
-
-    left = left.clamp(0.0, parentSize.width - minWidth);
-    top = top.clamp(0.0, parentSize.height - minHeight);
-    right = right.clamp(left + minWidth, parentSize.width);
-    bottom = bottom.clamp(top + minHeight, parentSize.height);
-
-    return Rect.fromLTRB(left, top, right, bottom);
   }
 
-  void _applyRect(Rect rect, Size parentSize) {
-    final clamped = _clampRect(rect, parentSize);
+  Rect _clampRect(Rect r) {
+    final minW = _parentSize.width * 0.3;
+    final minH = _parentSize.height * 0.2;
+    final maxW = _parentSize.width * 0.95;
+    final maxH = _parentSize.height * 0.9;
+
+    final w = r.width.clamp(minW, maxW);
+    final h = r.height.clamp(minH, maxH);
+
+    var clamped = Rect.fromCenter(center: r.center, width: w, height: h);
+
+    if (clamped.left < 0) clamped = clamped.shift(Offset(-clamped.left, 0));
+    if (clamped.top < 0) clamped = clamped.shift(Offset(0, -clamped.top));
+    if (clamped.right > _parentSize.width) {
+      clamped = clamped.shift(Offset(_parentSize.width - clamped.right, 0));
+    }
+    if (clamped.bottom > _parentSize.height) {
+      clamped = clamped.shift(Offset(0, _parentSize.height - clamped.bottom));
+    }
+
+    return clamped;
+  }
+
+  void _applyRect(Rect r) {
+    if (_parentSize.width <= 0 || _parentSize.height <= 0) return;
+
+    final clamped = _clampRect(r);
     setState(() {
-      final width = clamped.width;
-      final height = clamped.height;
-      _widthFraction = width / parentSize.width;
-      _heightFraction = height / parentSize.height;
+      _widthFraction = clamped.width / _parentSize.width;
+      _heightFraction = clamped.height / _parentSize.height;
       _center = Offset(
-        (clamped.left + clamped.width / 2) / parentSize.width,
-        (clamped.top + clamped.height / 2) / parentSize.height,
+        (clamped.left + clamped.width / 2) / _parentSize.width,
+        (clamped.top + clamped.height / 2) / _parentSize.height,
       );
     });
-    _emitChange(parentSize);
+    _emitChange();
   }
 
-  void _move(DragUpdateDetails details, Size parentSize) {
-    final start = _moveStartRect;
-    if (start == null) return;
-    final newRect = start.shift(details.delta);
-    _applyRect(newRect, parentSize);
-    _moveStartRect = _currentRect(parentSize);
+  Rect _handleRectFor(Alignment corner) {
+    final f = _frameRect;
+    final dx = corner.x < 0 ? f.left : f.right;
+    final dy = corner.y < 0 ? f.top : f.bottom;
+    return Rect.fromCenter(
+      center: Offset(dx, dy),
+      width: _handleRadius * 2,
+      height: _handleRadius * 2,
+    );
   }
 
-  void _resize(DragUpdateDetails details, Size parentSize) {
-    final start = _resizeStartRect;
-    final handle = _activeHandle;
-    if (start == null || handle == null) return;
+  bool _isOnBody(Offset localPos) =>
+      _frameRect.contains(localPos) && !_isOnAnyHandle(localPos);
 
-    final minWidth = parentSize.width * 0.3;
-    final minHeight = parentSize.height * 0.2;
-
-    Rect next = start;
-    switch (handle) {
-      case _Handle.topLeft:
-        next = Rect.fromLTRB(
-          (start.left + details.delta.dx).clamp(0.0, start.right - minWidth),
-          (start.top + details.delta.dy).clamp(0.0, start.bottom - minHeight),
-          start.right,
-          start.bottom,
-        );
-      case _Handle.topRight:
-        next = Rect.fromLTRB(
-          start.left,
-          (start.top + details.delta.dy).clamp(0.0, start.bottom - minHeight),
-          (start.right + details.delta.dx).clamp(
-            start.left + minWidth,
-            parentSize.width,
-          ),
-          start.bottom,
-        );
-      case _Handle.bottomLeft:
-        next = Rect.fromLTRB(
-          (start.left + details.delta.dx).clamp(0.0, start.right - minWidth),
-          start.top,
-          start.right,
-          (start.bottom + details.delta.dy).clamp(
-            start.top + minHeight,
-            parentSize.height,
-          ),
-        );
-      case _Handle.bottomRight:
-        next = Rect.fromLTRB(
-          start.left,
-          start.top,
-          (start.right + details.delta.dx).clamp(
-            start.left + minWidth,
-            parentSize.width,
-          ),
-          (start.bottom + details.delta.dy).clamp(
-            start.top + minHeight,
-            parentSize.height,
-          ),
-        );
+  bool _isOnAnyHandle(Offset localPos) {
+    for (final c in _allCorners) {
+      if (_handleRectFor(c).contains(localPos)) return true;
     }
+    return false;
+  }
 
-    _applyRect(next, parentSize);
-    _resizeStartRect = _currentRect(parentSize);
+  Alignment? _hitHandle(Offset localPos) {
+    for (final c in _allCorners) {
+      if (_handleRectFor(c).contains(localPos)) return c;
+    }
+    return null;
+  }
+
+  static const _allCorners = [
+    Alignment.topLeft,
+    Alignment.topRight,
+    Alignment.bottomLeft,
+    Alignment.bottomRight,
+  ];
+
+  Offset? _dragStartPointer;
+  Rect? _dragStartRect;
+  Alignment? _activeCorner;
+
+  void _onPointerDown(PointerDownEvent event) {
+    final pos = event.localPosition;
+    final corner = _hitHandle(pos);
+    if (corner != null) {
+      _activeCorner = corner;
+      _dragStartRect = _frameRect;
+      _dragStartPointer = pos;
+    } else if (_isOnBody(pos)) {
+      _activeCorner = null;
+      _dragStartRect = _frameRect;
+      _dragStartPointer = pos;
+    }
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    if (_dragStartPointer == null || _dragStartRect == null) return;
+    final delta = event.localPosition - _dragStartPointer!;
+    final start = _dragStartRect!;
+
+    if (_activeCorner == null) {
+      final shifted = start.shift(delta);
+      _applyRect(shifted);
+    } else {
+      final c = _activeCorner!;
+      final minW = _parentSize.width * 0.3;
+      final minH = _parentSize.height * 0.2;
+
+      double l = start.left, t = start.top, r = start.right, b = start.bottom;
+
+      if (c.x < 0) l = (start.left + delta.dx).clamp(0.0, start.right - minW);
+      if (c.x > 0) {
+        r = (start.right + delta.dx).clamp(
+          start.left + minW,
+          _parentSize.width,
+        );
+      }
+      if (c.y < 0) t = (start.top + delta.dy).clamp(0.0, start.bottom - minH);
+      if (c.y > 0) {
+        b = (start.bottom + delta.dy).clamp(
+          start.top + minH,
+          _parentSize.height,
+        );
+      }
+      _applyRect(Rect.fromLTRB(l, t, r, b));
+    }
+  }
+
+  void _onPointerUp(PointerUpEvent event) {
+    _dragStartPointer = null;
+    _dragStartRect = null;
+    _activeCorner = null;
   }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final parentSize = Size(constraints.maxWidth, constraints.maxHeight);
-        final frameRect = _currentRect(parentSize);
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: _onPointerDown,
+      onPointerMove: _onPointerMove,
+      onPointerUp: _onPointerUp,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final newSize = Size(constraints.maxWidth, constraints.maxHeight);
+          final sizeChanged = _parentSize != newSize;
+          _parentSize = newSize;
 
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _emitChange(parentSize);
+          // Пропускаем отрисовку, если контейнер еще не имеет размеров
+          if (_parentSize.width <= 0 || _parentSize.height <= 0) {
+            return const SizedBox.shrink();
           }
-        });
 
-        return Stack(
-          children: [
-            CustomPaint(
-              size: parentSize,
-              painter: _DimmerPainter(frameRect: frameRect),
-            ),
-            Positioned(
-              left: frameRect.left,
-              top: frameRect.top,
-              width: frameRect.width,
-              height: frameRect.height,
-              child: GestureDetector(
-                onPanStart: (_) {
-                  _moveStartRect = frameRect;
-                },
-                onPanUpdate: (details) => _move(details, parentSize),
+          // Переизлучаем координаты при первом кадре или при изменении размера экрана
+          if (!_initialEmitted || sizeChanged) {
+            _initialEmitted = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) _emitChange();
+            });
+          }
+
+          final f = _frameRect;
+
+          return Stack(
+            children: [
+              CustomPaint(
+                size: _parentSize,
+                painter: _DimmerPainter(frameRect: f),
+              ),
+              Positioned(
+                left: f.left,
+                top: f.top,
+                width: f.width,
+                height: f.height,
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.white, width: 2),
                   ),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      _HandleWidget(
-                        alignment: Alignment.topLeft,
-                        onPanStart: (_) {
-                          _resizeStartRect = frameRect;
-                          _activeHandle = _Handle.topLeft;
-                        },
-                        onPanUpdate: (details) => _resize(details, parentSize),
+                ),
+              ),
+              for (final c in _allCorners)
+                Positioned(
+                  left: c.x < 0
+                      ? f.left - _handleRadius
+                      : f.right - _handleRadius,
+                  top: c.y < 0
+                      ? f.top - _handleRadius
+                      : f.bottom - _handleRadius,
+                  child: SizedBox(
+                    width: _handleRadius * 2,
+                    height: _handleRadius * 2,
+                    child: Center(
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.black54, width: 1),
+                        ),
                       ),
-                      _HandleWidget(
-                        alignment: Alignment.topRight,
-                        onPanStart: (_) {
-                          _resizeStartRect = frameRect;
-                          _activeHandle = _Handle.topRight;
-                        },
-                        onPanUpdate: (details) => _resize(details, parentSize),
-                      ),
-                      _HandleWidget(
-                        alignment: Alignment.bottomLeft,
-                        onPanStart: (_) {
-                          _resizeStartRect = frameRect;
-                          _activeHandle = _Handle.bottomLeft;
-                        },
-                        onPanUpdate: (details) => _resize(details, parentSize),
-                      ),
-                      _HandleWidget(
-                        alignment: Alignment.bottomRight,
-                        onPanStart: (_) {
-                          _resizeStartRect = frameRect;
-                          _activeHandle = _Handle.bottomRight;
-                        },
-                        onPanUpdate: (details) => _resize(details, parentSize),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ),
-            Positioned(
-              left: 12,
-              right: 12,
-              bottom: 12,
-              child: Text(
-                'Drag and pinch the frame to select the ingredients area',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white70),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-enum _Handle { topLeft, topRight, bottomLeft, bottomRight }
-
-class _HandleWidget extends StatelessWidget {
-  const _HandleWidget({
-    required this.alignment,
-    required this.onPanStart,
-    required this.onPanUpdate,
-  });
-
-  final Alignment alignment;
-  final GestureDragStartCallback onPanStart;
-  final GestureDragUpdateCallback onPanUpdate;
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: alignment,
-      child: Transform.translate(
-        offset: Offset(alignment.x < 0 ? -14 : 14, alignment.y < 0 ? -14 : 14),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onPanStart: onPanStart,
-          onPanUpdate: onPanUpdate,
-          child: SizedBox(
-            width: 44,
-            height: 44,
-            child: Center(
-              child: Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.black54, width: 1),
+              const Positioned(
+                left: 12,
+                right: 12,
+                bottom: 12,
+                child: Text(
+                  'Drag the handles to select the ingredients area',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70),
                 ),
               ),
-            ),
-          ),
-        ),
+            ],
+          );
+        },
       ),
     );
   }

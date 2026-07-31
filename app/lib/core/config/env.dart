@@ -8,6 +8,6 @@ class Env {
 
   static const ocrServiceUrl = String.fromEnvironment(
     'OCR_SERVICE_URL',
-    defaultValue: 'http://192.168.3.28:8000',
+    defaultValue: 'http://localhost:8000',
   );
 }

@@ -48,8 +48,6 @@ enum ScanStep {
   productFound,
   productMissing,
   ingredientsScanning,
-  ocrProcessing,
-  ocrReview,
   analyzing,
   completed,
   failed,

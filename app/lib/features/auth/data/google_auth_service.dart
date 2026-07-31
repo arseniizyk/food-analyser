@@ -7,19 +7,18 @@ import '../../../core/config/env.dart';
 import '../domain/app_user.dart';
 
 class GoogleAuthService {
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'openid', 'profile'],
-  );
+  static const _serverClientId =
+      '339737972922-9ecoq5qbv9tgetk8p6duo1dadd9cmcb4.apps.googleusercontent.com';
 
   Future<AuthorizedUser> signIn() async {
-    final account = await _googleSignIn.signIn();
-    if (account == null) {
-      throw Exception('Google sign-in aborted by user');
-    }
+    final googleSignIn = GoogleSignIn.instance;
 
-    final authentication = await account.authentication;
+    await googleSignIn.initialize(serverClientId: _serverClientId);
+    await googleSignIn.signOut();
+
+    final account = await googleSignIn.authenticate();
+    final authentication = account.authentication;
     final idToken = authentication.idToken;
-    final accessToken = authentication.accessToken ?? '';
 
     if (idToken == null || idToken.isEmpty) {
       throw Exception(
@@ -53,7 +52,7 @@ class GoogleAuthService {
       return AuthorizedUser(
         id: userId,
         email: account.email,
-        accessToken: accessToken,
+        accessToken: '',
       );
     } catch (e) {
       throw Exception('Failed to authenticate with backend: $e');

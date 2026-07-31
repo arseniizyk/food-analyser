@@ -10,13 +10,11 @@ class AnalyzeProductUseCase {
     required ScanSession session,
     String? userId,
     required String imagePath,
-    required String ingredientsText,
   }) {
     return _scanRepository.analyzeIngredients(
       session: session,
       userId: userId,
       imagePath: imagePath,
-      ingredientsText: ingredientsText,
     );
   }
 }

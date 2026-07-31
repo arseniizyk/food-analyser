@@ -203,6 +203,16 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
       final analysis = session?.analysis;
 
       if (next.hasError && _isProcessingScan) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Scan failed: ${next.error.toString()}',
+              ),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
         _resumeScanning();
       }
 
@@ -214,7 +224,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
       if (session?.step == ScanStep.completed && analysis != null) {
         showAnalysisResultBottomSheet(
           context: context,
-          analysisId: analysis.id,
+          analysisId: analysis.barcode,
           onScanAnother: () {
             Navigator.of(context).pop();
             ref.read(scanControllerProvider.notifier).reset();

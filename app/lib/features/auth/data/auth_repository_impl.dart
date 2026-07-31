@@ -71,4 +71,9 @@ class AuthRepositoryImpl implements AuthRepository {
     await _secureStorage.delete('access_token');
     _userController.add(null);
   }
+
+  @override
+  void dispose() {
+    _userController.close();
+  }
 }

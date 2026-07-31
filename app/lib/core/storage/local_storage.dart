@@ -16,7 +16,9 @@ class MemoryLocalStorage implements LocalStorage {
 
   @override
   Future<void> saveProduct(Map<String, Object?> product) async {
-    _productsByBarcode[product['barcode']! as String] = product;
+    final barcode = product['barcode'] as String?;
+    if (barcode == null || barcode.isEmpty) return;
+    _productsByBarcode[barcode] = product;
   }
 
   @override
@@ -26,18 +28,24 @@ class MemoryLocalStorage implements LocalStorage {
 
   @override
   Future<void> saveAnalysis(Map<String, Object?> analysis) async {
-    _analyses[analysis['id']! as String] = analysis;
+    final barcode = analysis['barcode'] as String?;
+    if (barcode == null || barcode.isEmpty) return;
+    _analyses[barcode] = analysis;
   }
 
   @override
   Future<List<Map<String, Object?>>> getHistory(String userId) async {
     return _analyses.values
-        .where((analysis) => analysis['userId'] == userId)
+        .where((analysis) {
+          if (userId.isEmpty) return true;
+          return analysis['userId'] == userId;
+        })
         .toList()
-      ..sort(
-        (a, b) =>
-            (b['createdAt']! as String).compareTo(a['createdAt']! as String),
-      );
+      ..sort((a, b) {
+        final aDate = a['createdAt'] as String? ?? '';
+        final bDate = b['createdAt'] as String? ?? '';
+        return bDate.compareTo(aDate);
+      });
   }
 
   @override

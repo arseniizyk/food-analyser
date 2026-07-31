@@ -21,15 +21,26 @@ class Product {
 
   factory Product.fromJson(Map<String, Object?> json) {
     return Product(
-      id: json['id']! as String,
-      barcode: json['barcode']! as String,
-      name: json['name']! as String,
+      id: json['id'] as String? ?? '',
+      barcode: json['barcode'] as String? ?? '',
+      name: json['name'] as String? ?? 'Unknown product',
       brand: json['brand'] as String?,
       imageUrl: json['imageUrl'] as String?,
-      ingredients: (json['ingredients']! as List<Object?>).cast<String>(),
-      createdAt: DateTime.parse(json['createdAt']! as String),
-      updatedAt: DateTime.parse(json['updatedAt']! as String),
+      ingredients: _parseStringList(json['ingredients']),
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'] as String) ?? DateTime.now()
+          : DateTime.now(),
     );
+  }
+
+  static List<String> _parseStringList(Object? value) {
+    if (value is List) {
+      return value.whereType<String>().toList();
+    }
+    return [];
   }
 
   Map<String, Object?> toJson() {

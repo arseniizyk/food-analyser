@@ -6,16 +6,14 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/history/presentation/history_screen.dart';
 import '../features/scan/presentation/barcode_scanner_screen.dart';
 import '../features/scan/presentation/ingredients_scan_screen.dart';
-import '../features/scan/presentation/ocr_confirmation_screen.dart';
 import '../features/scan/presentation/scan_screen.dart';
 import 'bottom_nav_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authControllerProvider);
-
-  return GoRouter(
+  final router = GoRouter(
     initialLocation: '/app/scan',
     redirect: (context, state) {
+      final authState = ref.read(authControllerProvider);
       final isAuthRoute = state.uri.path == '/auth';
 
       if (authState.isLoading) {
@@ -53,13 +51,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: 'ingredients/:sessionId',
-                    builder: (context, state) => IngredientCameraScreen(
-                      sessionId: state.pathParameters['sessionId']!,
-                    ),
-                  ),
-                  GoRoute(
-                    path: 'ocr/:sessionId',
-                    builder: (context, state) => OcrConfirmationScreen(
+                    builder: (context, state) => IngredientsScanScreen(
                       sessionId: state.pathParameters['sessionId']!,
                     ),
                   ),
@@ -79,4 +71,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  ref.listen(authControllerProvider, (_, _) {
+    router.refresh();
+  });
+
+  return router;
 });

@@ -14,8 +14,6 @@ abstract interface class ApiClient {
   });
 
   Future<Map<String, Object?>?> getAnalysisByBarcode(String barcode);
-
-  Future<String?> ocrRecognizeImage(String imagePath);
 }
 
 class FakeApiClient implements ApiClient {
@@ -54,10 +52,7 @@ class FakeApiClient implements ApiClient {
       'userId': userId,
       'score': score,
       'grade': score >= 80 ? 'good' : 'average',
-      'summary': [
-        'Composition looks balanced.',
-        'No major risks detected.',
-      ],
+      'summary': ['Composition looks balanced.', 'No major risks detected.'],
       'risks': [],
       'ingredients': ['ingredient1', 'ingredient2'],
       'createdAt': DateTime.now().toIso8601String(),
@@ -70,16 +65,10 @@ class FakeApiClient implements ApiClient {
   @override
   Future<Map<String, Object?>?> getAnalysisByBarcode(String barcode) async {
     await Future<void>.delayed(const Duration(milliseconds: 250));
-    return _analyses.values.firstWhere(
-      (a) => a['barcode'] == barcode,
-      orElse: () => <String, Object?>{},
+    return _analyses.values.cast<Map<String, Object?>?>().firstWhere(
+      (a) => a != null && a['barcode'] == barcode,
+      orElse: () => null,
     );
-  }
-
-  @override
-  Future<String?> ocrRecognizeImage(String imagePath) async {
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-    return 'ingredient1, ingredient2, ingredient3';
   }
 }
 
@@ -87,12 +76,10 @@ class FakeApiClient implements ApiClient {
 class HttpApiClient implements ApiClient {
   HttpApiClient({
     required this.baseUrl,
-    required this.ocrServiceUrl,
     required this._secureStorage,
   });
 
   final String baseUrl;
-  final String ocrServiceUrl;
   final SecureStorage _secureStorage;
 
   Future<Map<String, String>> _authHeaders() async {
@@ -107,9 +94,11 @@ class HttpApiClient implements ApiClient {
   @override
   Future<Map<String, Object?>?> getProductByBarcode(String barcode) async {
     try {
-      final uri = Uri.parse('$baseUrl/api/v1/products/$barcode');
+      final uri = Uri.parse('$baseUrl/api/v1/product/$barcode');
       final headers = await _authHeaders();
-      final response = await http.get(uri, headers: headers);
+      final response = await http
+          .get(uri, headers: headers)
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 404) {
         return null;
@@ -136,25 +125,21 @@ class HttpApiClient implements ApiClient {
         throw FileSystemException('Image file not found: $imagePath');
       }
 
-      final uri = Uri.parse('$baseUrl/api/v1/products/$barcode/analyze');
+      final uri = Uri.parse('$baseUrl/api/v1/analyze/$barcode');
       final request = http.MultipartRequest('POST', uri);
 
-      request.files.add(await http.MultipartFile.fromPath('file', imagePath));
-
-      if (userId != null && userId.isNotEmpty) {
-        request.fields['user_id'] = userId;
-      }
+      request.files.add(await http.MultipartFile.fromPath('image', imagePath));
 
       final headers = await _authHeaders();
       request.headers.addAll(headers);
 
-      final response = await request.send();
+      final response = await request.send().timeout(
+        const Duration(seconds: 60),
+      );
 
       if (response.statusCode != 200) {
         final body = await response.stream.bytesToString();
-        throw Exception(
-          'Analyze request failed: ${response.statusCode} $body',
-        );
+        throw Exception('Analyze request failed: ${response.statusCode} $body');
       }
 
       final responseBody = await response.stream.bytesToString();
@@ -167,9 +152,11 @@ class HttpApiClient implements ApiClient {
   @override
   Future<Map<String, Object?>?> getAnalysisByBarcode(String barcode) async {
     try {
-      final uri = Uri.parse('$baseUrl/api/v1/products/$barcode/analysis');
+      final uri = Uri.parse('$baseUrl/api/v1/product/$barcode');
       final headers = await _authHeaders();
-      final response = await http.get(uri, headers: headers);
+      final response = await http
+          .get(uri, headers: headers)
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 404) {
         return null;
@@ -181,36 +168,6 @@ class HttpApiClient implements ApiClient {
       return jsonDecode(response.body) as Map<String, Object?>?;
     } catch (e) {
       throw Exception('Error getting analysis: $e');
-    }
-  }
-
-  @override
-  Future<String?> ocrRecognizeImage(String imagePath) async {
-    try {
-      final file = File(imagePath);
-      if (!await file.exists()) {
-        throw FileSystemException('File not found: $imagePath');
-      }
-      final uri = Uri.parse('$ocrServiceUrl/ocr');
-      final request = http.MultipartRequest('POST', uri);
-      request.files.add(await http.MultipartFile.fromPath('file', imagePath));
-
-      // Attach auth header if present
-      final headers = await _authHeaders();
-      request.headers.addAll(headers);
-
-      final response = await request.send();
-
-      if (response.statusCode != 200) {
-        throw Exception(
-          'OCR request failed with status ${response.statusCode}',
-        );
-      }
-
-      final responseData = await response.stream.bytesToString();
-      return responseData;
-    } catch (e) {
-      throw Exception('OCR request failed: $e');
     }
   }
 }
