@@ -10,11 +10,11 @@ import (
 )
 
 type Config struct {
-	MLConfig  MLConfig       `env-prefix:"ML"`
-	LLMConfig LLMConfig      `env-prefix:"LLM"`
-	HTTP      HTTPConfig     `env-prefix:"HTTP"`
-	Postgres  PostgresConfig `env-prefix:"POSTGRES"`
-	Google    GoogleConfig   `env-prefix:"GOOGLE"`
+	MLConfig  MLConfig       `env-prefix:"ML_"`
+	LLMConfig LLMConfig      `env-prefix:"LLM_"`
+	HTTP      HTTPConfig     `env-prefix:"HTTP_"`
+	Postgres  PostgresConfig `env-prefix:"POSTGRES_"`
+	Google    GoogleConfig   `env-prefix:"GOOGLE_"`
 }
 
 type HTTPConfig struct {

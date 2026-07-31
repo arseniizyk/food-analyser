@@ -21,8 +21,7 @@ from PIL import Image
 # CONFIG
 # ---------------------------
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-HOST = os.getenv("HOST", "0.0.0.0")
-PORT = int(os.getenv("PORT", 8000))
+PORT = int(os.getenv("ML_PORT", 8888))
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
 
 # ---------------------------
@@ -211,5 +210,5 @@ async def recognize_text(file: UploadFile = File(...)):
 
 
 if __name__ == "__main__":
-    logger.info(f"Launching uvicorn server on {HOST}:{PORT}")
-    uvicorn.run(app, host=HOST, port=PORT, log_level="info")
+    logger.info(f"Launching uvicorn server on 0.0.0.0:{PORT}")
+    uvicorn.run(app, host="0.0.0.0", port=PORT, log_level="info")

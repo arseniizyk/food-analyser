@@ -22,9 +22,18 @@ func main() {
 		panic(fmt.Errorf("failed to build config: %w", err))
 	}
 
+	connString := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+		cfg.Postgres.User,
+		cfg.Postgres.Password,
+		cfg.Postgres.Host,
+		cfg.Postgres.Port,
+		cfg.Postgres.DBName,
+		cfg.Postgres.SSLMode,
+	)
+
 	m, err := migrate.New(
 		"file://migrations",
-		cfg.Postgres.ConnString(),
+		connString,
 	)
 	if err != nil {
 		panic(fmt.Errorf("failed to create migration: %w", err))
