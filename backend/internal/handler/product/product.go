@@ -37,7 +37,7 @@ func (h *Handler) AnalyzeProduct(w http.ResponseWriter, r *http.Request, barcode
 	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
 	defer cancel()
 
-	file, _, err := r.FormFile("file")
+	file, _, err := r.FormFile("image")
 	if err != nil {
 		utils.WriteError(w, r, http.StatusBadRequest, "invalid file")
 		return
