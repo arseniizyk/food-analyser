@@ -47,3 +47,4 @@ app/ios/Runner/GoogleService-Info.plist
 backend/configs/dev.env
 bin
 .claude
+/backend/migrate.exe

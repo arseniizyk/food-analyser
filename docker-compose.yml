@@ -1,88 +1,104 @@
-version: "3.8"
-
 services:
-  postgres:
-    image: postgres:18-alpine
-    container_name: food_postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: food_analyser
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d food_analyser" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+    postgres:
+        image: postgres:18-alpine
+        container_name: food_postgres
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: food_analyser
+        ports:
+            - '5432:5432'
+        volumes:
+            - postgres_data:/var/lib/postgresql
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U postgres -d food_analyser']
+            interval: 5s
+            timeout: 5s
+            retries: 5
+        networks:
+            - internal
 
-  ml:
-    build:
-      context: ./ml
-      dockerfile: Dockerfile
-    container_name: food_ml
-    restart: unless-stopped
-    environment:
-      HOST: 0.0.0.0
-      PORT: 8000
-    ports:
-      - "8001:8000"
-    healthcheck:
-      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
+    ml:
+        build:
+            context: ./ml
+            dockerfile: Dockerfile
+        container_name: food_ml
+        restart: unless-stopped
+        environment:
+            HOST: 0.0.0.0
+            PORT: 8000
+        ports:
+            - '8001:8000'
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'python',
+                    '-c',
+                    "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 15s
+        networks:
+            - internal
 
-  migrate:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: migrate
-    container_name: food_migrate
-    environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: food_analyser
-      POSTGRES_SSLMODE: disable
-    depends_on:
-      postgres:
-        condition: service_healthy
+    migrate:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+            target: migrate
+        container_name: food_migrate
+        restart: on-failure:5
+        environment:
+            POSTGRES_HOST: postgres
+            POSTGRES_PORT: 5432
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: food_analyser
+            POSTGRES_SSLMODE: disable
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - internal
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: app
-    container_name: food_backend
-    restart: unless-stopped
-    environment:
-      HTTP_PORT: 8000
-      HTTP_HOST: 0.0.0.0
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: food_analyser
-      POSTGRES_SSLMODE: disable
-      ML_HOST: ml
-      ML_PORT: 8000
-      ML_TIMEOUT: 15s
-      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-""}
-    ports:
-      - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
-      ml:
-        condition: service_healthy
+    backend:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+            target: app
+        container_name: food_backend
+        restart: unless-stopped
+        environment:
+            HTTP_PORT: 8000
+            HTTP_HOST: 0.0.0.0
+            POSTGRES_HOST: postgres
+            POSTGRES_PORT: 5432
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: food_analyser
+            POSTGRES_SSLMODE: disable
+            ML_HOST: ml
+            ML_PORT: 8000
+            ML_TIMEOUT: 15s
+            GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-""}
+        ports:
+            - '8000:8000'
+        depends_on:
+            postgres:
+                condition: service_healthy
+            migrate:
+                condition: service_completed_successfully
+            ml:
+                condition: service_healthy
+        networks:
+            - internal
+
+networks:
+    internal:
 
 volumes:
-  postgres_data:
+    postgres_data:
