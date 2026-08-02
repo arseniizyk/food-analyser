@@ -12,14 +12,14 @@ class MovableSelectionOverlay extends StatefulWidget {
 
 class _MovableSelectionOverlayState extends State<MovableSelectionOverlay> {
   Offset _center = const Offset(0.5, 0.4);
-  double _widthFraction = 0.8;
-  double _heightFraction = 0.35;
+  double _widthFraction = 0.45;
+  double _heightFraction = 0.18;
 
   Size _parentSize = Size.zero;
   bool _initialEmitted = false;
 
   // Синхронизируем радиус маркера и радиус хит-теста
-  static const double _handleRadius = 24;
+  static const double _handleRadius = 14;
 
   Rect get _frameRect {
     final w = _parentSize.width * _widthFraction;
@@ -54,10 +54,10 @@ class _MovableSelectionOverlayState extends State<MovableSelectionOverlay> {
   }
 
   Rect _clampRect(Rect r) {
-    final minW = _parentSize.width * 0.3;
-    final minH = _parentSize.height * 0.2;
-    final maxW = _parentSize.width * 0.95;
-    final maxH = _parentSize.height * 0.9;
+    final minW = _parentSize.width * 0.18;
+    final minH = _parentSize.height * 0.1;
+    final maxW = _parentSize.width * 0.75;
+    final maxH = _parentSize.height * 0.55;
 
     final w = r.width.clamp(minW, maxW);
     final h = r.height.clamp(minH, maxH);
@@ -154,8 +154,8 @@ class _MovableSelectionOverlayState extends State<MovableSelectionOverlay> {
       _applyRect(shifted);
     } else {
       final c = _activeCorner!;
-      final minW = _parentSize.width * 0.3;
-      final minH = _parentSize.height * 0.2;
+      final minW = _parentSize.width * 0.18;
+      final minH = _parentSize.height * 0.1;
 
       double l = start.left, t = start.top, r = start.right, b = start.bottom;
 
@@ -224,8 +224,8 @@ class _MovableSelectionOverlayState extends State<MovableSelectionOverlay> {
                 height: f.height,
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.white, width: 2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white, width: 1.5),
                   ),
                 ),
               ),
@@ -258,7 +258,7 @@ class _MovableSelectionOverlayState extends State<MovableSelectionOverlay> {
                 right: 12,
                 bottom: 12,
                 child: Text(
-                  'Drag the handles to select the ingredients area',
+                  'Drag the frame to select the ingredients area',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white70),
                 ),

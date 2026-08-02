@@ -1,10 +1,11 @@
 import 'dart:io';
+
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image/image.dart' as img;
-import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../core/camera/camera_permission_helper.dart';
 import '../../../core/camera/movable_selection_overlay.dart';
@@ -24,12 +25,14 @@ class IngredientsScanScreen extends ConsumerStatefulWidget {
 
 class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
     with WidgetsBindingObserver {
-  MobileScannerController? _controller;
+  CameraController? _controller;
   CameraPermissionStatus _permissionStatus = CameraPermissionStatus.denied;
   bool _isCheckingPermission = true;
+  bool _isInitializingCamera = false;
   bool _isProcessing = false;
-  Uint8List? _lastFrameBytes;
-  Rect _cropRect = const Rect.fromLTRB(0.1, 0.3, 0.9, 0.65);
+  bool _isTakingPicture = false;
+  String? _cameraError;
+  Rect _cropRect = const Rect.fromLTRB(0.275, 0.31, 0.725, 0.49);
 
   @override
   void initState() {
@@ -52,15 +55,61 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
     }
   }
 
-  void _startScanner() {
-    _controller?.dispose();
-    _controller = MobileScannerController(
-      detectionSpeed: DetectionSpeed.noDuplicates,
-      facing: CameraFacing.back,
-      returnImage: true,
-    );
-    if (mounted) {
-      setState(() => _isProcessing = false);
+  Future<void> _startScanner() async {
+    setState(() {
+      _isInitializingCamera = true;
+      _cameraError = null;
+      _isProcessing = false;
+      _isTakingPicture = false;
+    });
+
+    CameraController? nextController;
+
+    try {
+      final cameras = await availableCameras();
+      if (!mounted) {
+        return;
+      }
+
+      if (cameras.isEmpty) {
+        throw StateError('No cameras found on this device.');
+      }
+
+      final backCamera = cameras.firstWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.back,
+        orElse: () => cameras.first,
+      );
+
+      nextController = CameraController(
+        backCamera,
+        ResolutionPreset.high,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg,
+      );
+
+      await nextController.initialize();
+      await nextController.setFlashMode(FlashMode.off);
+
+      if (!mounted) {
+        await nextController.dispose();
+        return;
+      }
+
+      await _controller?.dispose();
+      setState(() {
+        _controller = nextController;
+        _isInitializingCamera = false;
+      });
+    } catch (e) {
+      await nextController?.dispose();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _cameraError = e.toString();
+        _isInitializingCamera = false;
+      });
     }
   }
 
@@ -75,7 +124,7 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
     });
 
     if (status == CameraPermissionStatus.granted) {
-      _startScanner();
+      await _startScanner();
     }
   }
 
@@ -86,11 +135,12 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
 
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      controller.stop();
+      controller.pausePreview();
     } else if (state == AppLifecycleState.resumed &&
         _permissionStatus == CameraPermissionStatus.granted &&
-        !_isProcessing) {
-      controller.start();
+        !_isProcessing &&
+        !_isTakingPicture) {
+      controller.resumePreview();
     }
   }
 
@@ -102,31 +152,51 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
   }
 
   Future<void> _captureIngredients() async {
-    if (_isProcessing) return;
+    if (_isProcessing || _isTakingPicture) return;
 
-    setState(() => _isProcessing = true);
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Camera is not ready yet. Please wait a moment.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+      _isTakingPicture = true;
+    });
     await HapticFeedback.mediumImpact();
 
     try {
-      final bytes = _lastFrameBytes;
-      if (bytes == null) {
-        throw Exception('Camera frame not available yet. Please try again.');
-      }
-
+      final picture = await controller.takePicture();
+      final bytes = await File(picture.path).readAsBytes();
       final image = img.decodeImage(bytes);
       if (image == null) {
         throw Exception('Failed to decode camera frame.');
       }
 
-      final cropX = (_cropRect.left * image.width).round().clamp(0, image.width);
-      final cropY =
-          (_cropRect.top * image.height).round().clamp(0, image.height);
-      final cropW = (_cropRect.width * image.width)
-          .round()
-          .clamp(1, image.width - cropX);
-      final cropH = (_cropRect.height * image.height)
-          .round()
-          .clamp(1, image.height - cropY);
+      final cropX = (_cropRect.left * image.width).round().clamp(
+        0,
+        image.width,
+      );
+      final cropY = (_cropRect.top * image.height).round().clamp(
+        0,
+        image.height,
+      );
+      final cropW = (_cropRect.width * image.width).round().clamp(
+        1,
+        image.width - cropX,
+      );
+      final cropH = (_cropRect.height * image.height).round().clamp(
+        1,
+        image.height - cropY,
+      );
       final cropped = img.copyCrop(
         image,
         x: cropX,
@@ -141,7 +211,9 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
       );
       await tempFile.writeAsBytes(img.encodeJpg(cropped));
 
-      await ref.read(scanControllerProvider.notifier).scanIngredients(
+      await ref
+          .read(scanControllerProvider.notifier)
+          .scanIngredients(
             imagePath: tempFile.path,
             sessionId: widget.sessionId,
           );
@@ -153,7 +225,13 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
             behavior: SnackBarBehavior.floating,
           ),
         );
-        setState(() => _isProcessing = false);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+          _isTakingPicture = false;
+        });
       }
     }
   }
@@ -200,14 +278,55 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
     });
 
     final scanState = ref.watch(scanControllerProvider);
-    final isLoading = scanState.isLoading || _isProcessing;
+    final controller = _controller;
+    final isCameraReady =
+        controller != null &&
+        controller.value.isInitialized &&
+        _cameraError == null;
+    final isLoading = scanState.isLoading || _isProcessing || _isTakingPicture;
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: _isCheckingPermission
+        child: _isCheckingPermission || _isInitializingCamera
             ? const Center(
                 child: CircularProgressIndicator(color: Colors.white),
+              )
+            : _cameraError != null
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.videocam_off_outlined,
+                        color: Colors.white,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Failed to start camera',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleLarge?.copyWith(color: Colors.white),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _cameraError!,
+                        style: const TextStyle(color: Colors.white70),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 20),
+                      FilledButton.icon(
+                        onPressed: _startScanner,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
               )
             : _permissionStatus != CameraPermissionStatus.granted
             ? CameraPermissionView(
@@ -218,16 +337,7 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
             : Stack(
                 fit: StackFit.expand,
                 children: [
-                  if (_controller != null)
-                    MobileScanner(
-                      controller: _controller,
-                      fit: BoxFit.cover,
-                      onDetect: (capture) {
-                        if (capture.image != null) {
-                          _lastFrameBytes = capture.image;
-                        }
-                      },
-                    ),
+                  if (isCameraReady) CameraPreview(controller),
                   MovableSelectionOverlay(
                     onChanged: (rect) {
                       _cropRect = rect;
@@ -235,10 +345,21 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
                   ),
                   _TopBar(
                     title: 'Scan Ingredients',
-                    torchEnabled: _controller?.torchEnabled ?? false,
+                    torchEnabled:
+                        controller!.value.flashMode == FlashMode.torch,
                     onBack: _handleBack,
                     onToggleTorch: () async {
-                      await _controller?.toggleTorch();
+                      final cameraController = _controller;
+                      if (cameraController == null ||
+                          !cameraController.value.isInitialized) {
+                        return;
+                      }
+
+                      await cameraController.setFlashMode(
+                        cameraController.value.flashMode == FlashMode.torch
+                            ? FlashMode.off
+                            : FlashMode.torch,
+                      );
                       if (mounted) setState(() {});
                     },
                   ),
@@ -249,6 +370,7 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
                     bottom: 20,
                     child: _BottomPanel(
                       isLoading: isLoading,
+                      isReady: isCameraReady,
                       error: scanState.error?.toString(),
                       onCapture: _captureIngredients,
                     ),
@@ -337,11 +459,13 @@ class _ProcessingOverlay extends StatelessWidget {
 class _BottomPanel extends StatelessWidget {
   const _BottomPanel({
     required this.isLoading,
+    required this.isReady,
     required this.error,
     required this.onCapture,
   });
 
   final bool isLoading;
+  final bool isReady;
   final String? error;
   final VoidCallback onCapture;
 
@@ -375,11 +499,11 @@ class _BottomPanel extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
             ),
           ),
-          onPressed: isLoading ? null : onCapture,
+          onPressed: isLoading || !isReady ? null : onCapture,
           icon: const Icon(Icons.camera_alt),
-          label: const Text(
-            'Scan Selected Area',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          label: Text(
+            isReady ? 'Scan Selected Area' : 'Waiting for camera...',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
       ],

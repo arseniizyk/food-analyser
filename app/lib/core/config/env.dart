@@ -3,11 +3,6 @@ class Env {
 
   static const apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8000',
-  );
-
-  static const ocrServiceUrl = String.fromEnvironment(
-    'OCR_SERVICE_URL',
-    defaultValue: 'http://localhost:8000',
+    defaultValue: 'http://192.168.3.2:8000',
   );
 }

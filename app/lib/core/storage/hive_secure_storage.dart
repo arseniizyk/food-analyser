@@ -1,28 +1,37 @@
 import 'package:hive_flutter/hive_flutter.dart';
+
+import 'hive_bootstrap.dart';
 import 'secure_storage.dart';
 
 class HiveSecureStorage implements SecureStorage {
-  HiveSecureStorage._(this._box);
+  HiveSecureStorage._();
 
-  final Box<dynamic> _box;
+  Box<dynamic>? _box;
 
-  static Future<HiveSecureStorage> create() async {
-    final box = await Hive.openBox<dynamic>('auth');
-    return HiveSecureStorage._(box);
+  static HiveSecureStorage create() {
+    return HiveSecureStorage._();
+  }
+
+  Future<Box<dynamic>> _boxReady() async {
+    await HiveBootstrap.ensureInitialized();
+    return _box ??= await Hive.openBox<dynamic>('auth');
   }
 
   @override
   Future<void> write(String key, String value) async {
-    await _box.put(key, value);
+    final box = await _boxReady();
+    await box.put(key, value);
   }
 
   @override
   Future<String?> read(String key) async {
-    return _box.get(key) as String?;
+    final box = await _boxReady();
+    return box.get(key) as String?;
   }
 
   @override
   Future<void> delete(String key) async {
-    await _box.delete(key);
+    final box = await _boxReady();
+    await box.delete(key);
   }
 }
