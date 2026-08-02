@@ -1,10 +1,10 @@
 version: '3'
 
 vars:
-    PYTHON: python3
+    PYTHON: python
     VENV_DIR: .venv
-    VENV_PYTHON: '{{.VENV_DIR}}/bin/python'
-    VENV_PIP: '{{.VENV_DIR}}/bin/pip'
+    VENV_PYTHON: '{{.VENV_DIR}}/Scripts/python.exe'
+    VENV_PIP: '{{.VENV_DIR}}/Scripts/python.exe -m pip'
     HOST: 0.0.0.0
     PORT: 8888
 
@@ -12,7 +12,7 @@ tasks:
     setup:
         desc: Create virtualenv and install Python dependencies
         cmds:
-            - test -d {{.VENV_DIR}} || {{.PYTHON}} -m venv {{.VENV_DIR}}
+            - python -m venv {{.VENV_DIR}}
             - '{{.VENV_PIP}} install --upgrade pip'
             - '{{.VENV_PIP}} install -r requirements.txt'
 

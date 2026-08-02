@@ -9,6 +9,9 @@ tags:
     description: операции с данными о продуктах и юзерах
 
 paths:
+  /api/v1/health:
+    $ref: ./paths/healthcheck.yaml
+
   /api/v1/product/{barcode}:
     $ref: ./paths/product_by_barcode.yaml
 

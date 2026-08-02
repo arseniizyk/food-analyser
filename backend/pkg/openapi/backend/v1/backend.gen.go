@@ -189,6 +189,9 @@ type ServerInterface interface {
 	// Authenticate with Google
 	// (POST /api/v1/auth/google)
 	AuthenticateWithGoogle(w http.ResponseWriter, r *http.Request)
+	// Healthcheck
+	// (GET /api/v1/health)
+	Health(w http.ResponseWriter, r *http.Request)
 	// Get analysis for a product
 	// (GET /api/v1/product/{barcode})
 	GetAnalysisByBarcode(w http.ResponseWriter, r *http.Request, barcode string)
@@ -207,6 +210,12 @@ func (_ Unimplemented) AnalyzeProduct(w http.ResponseWriter, r *http.Request, ba
 // Authenticate with Google
 // (POST /api/v1/auth/google)
 func (_ Unimplemented) AuthenticateWithGoogle(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Healthcheck
+// (GET /api/v1/health)
+func (_ Unimplemented) Health(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -256,6 +265,20 @@ func (siw *ServerInterfaceWrapper) AuthenticateWithGoogle(w http.ResponseWriter,
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AuthenticateWithGoogle(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// Health operation middleware
+func (siw *ServerInterfaceWrapper) Health(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Health(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -409,6 +432,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/auth/google", wrapper.AuthenticateWithGoogle)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/health", wrapper.Health)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/product/{barcode}", wrapper.GetAnalysisByBarcode)

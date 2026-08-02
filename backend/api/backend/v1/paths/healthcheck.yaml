@@ -1,0 +1,6 @@
+get:
+  summary: Healthcheck
+  operationId: health
+  responses:
+    200:
+      description: Service healthy
