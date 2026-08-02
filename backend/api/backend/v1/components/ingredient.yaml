@@ -10,9 +10,9 @@ properties:
   risk:
     type: string
     enum:
-      - low
-      - medium
-      - high
+      - safe
+      - caution
+      - dangerous
 
   description:
     type: string

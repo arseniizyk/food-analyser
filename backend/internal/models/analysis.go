@@ -16,10 +16,18 @@ type SummaryItem struct {
 }
 
 type Ingredient struct {
-	Name        string `json:"name"`
-	Risk        Risk   `json:"risk"`
-	Description string `json:"description"`
+	Name        string              `json:"name"`
+	Risk        IngredientRiskLevel `json:"risk"`
+	Description string              `json:"description"`
 }
+
+type IngredientRiskLevel string
+
+const (
+	RiskSafe      IngredientRiskLevel = "safe"
+	RiskCaution   IngredientRiskLevel = "caution"
+	RiskDangerous IngredientRiskLevel = "dangerous"
+)
 
 type Risk struct {
 	Severity    SeverityLevel `json:"severity"`
