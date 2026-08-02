@@ -210,4 +210,4 @@ ML Service Endpoints (`/ml`):
 
 ## 📄 License
 
-This project is open-source. See individual package files for third-party dependency licenses.
+This project is licensed under the MIT License.
