@@ -21,12 +21,6 @@ type Ingredient struct {
 	Description string              `json:"description"`
 }
 
-type Risk struct {
-	Severity    SeverityLevel `json:"severity"`
-	Title       string        `json:"title"`
-	Description string        `json:"description"`
-}
-
 type IngredientRiskLevel string
 
 const (
@@ -34,6 +28,12 @@ const (
 	RiskCaution   IngredientRiskLevel = "caution"
 	RiskDangerous IngredientRiskLevel = "dangerous"
 )
+
+type Risk struct {
+	Severity    SeverityLevel `json:"severity"`
+	Title       string        `json:"title"`
+	Description string        `json:"description"`
+}
 
 func (IngredientRiskLevel) JSONSchema() *jsonschema.Schema {
 	return &jsonschema.Schema{
