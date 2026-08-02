@@ -38,19 +38,19 @@ func (e AnalyzeProduct200JSONResponseBodyGrade) Valid() bool {
 
 // Defines values for AnalyzeProduct200JSONResponseBodyIngredientsRisk.
 const (
-	AnalyzeProduct200JSONResponseBodyIngredientsRiskCaution   AnalyzeProduct200JSONResponseBodyIngredientsRisk = "caution"
-	AnalyzeProduct200JSONResponseBodyIngredientsRiskDangerous AnalyzeProduct200JSONResponseBodyIngredientsRisk = "dangerous"
-	AnalyzeProduct200JSONResponseBodyIngredientsRiskSafe      AnalyzeProduct200JSONResponseBodyIngredientsRisk = "safe"
+	AnalyzeProduct200JSONResponseBodyIngredientsRiskHigh   AnalyzeProduct200JSONResponseBodyIngredientsRisk = "high"
+	AnalyzeProduct200JSONResponseBodyIngredientsRiskLow    AnalyzeProduct200JSONResponseBodyIngredientsRisk = "low"
+	AnalyzeProduct200JSONResponseBodyIngredientsRiskMedium AnalyzeProduct200JSONResponseBodyIngredientsRisk = "medium"
 )
 
 // Valid indicates whether the value is a known member of the AnalyzeProduct200JSONResponseBodyIngredientsRisk enum.
 func (e AnalyzeProduct200JSONResponseBodyIngredientsRisk) Valid() bool {
 	switch e {
-	case AnalyzeProduct200JSONResponseBodyIngredientsRiskCaution:
+	case AnalyzeProduct200JSONResponseBodyIngredientsRiskHigh:
 		return true
-	case AnalyzeProduct200JSONResponseBodyIngredientsRiskDangerous:
+	case AnalyzeProduct200JSONResponseBodyIngredientsRiskLow:
 		return true
-	case AnalyzeProduct200JSONResponseBodyIngredientsRiskSafe:
+	case AnalyzeProduct200JSONResponseBodyIngredientsRiskMedium:
 		return true
 	default:
 		return false
@@ -104,19 +104,19 @@ func (e GetAnalysisByBarcode200JSONResponseBodyGrade) Valid() bool {
 
 // Defines values for GetAnalysisByBarcode200JSONResponseBodyIngredientsRisk.
 const (
-	GetAnalysisByBarcode200JSONResponseBodyIngredientsRiskCaution   GetAnalysisByBarcode200JSONResponseBodyIngredientsRisk = "caution"
-	GetAnalysisByBarcode200JSONResponseBodyIngredientsRiskDangerous GetAnalysisByBarcode200JSONResponseBodyIngredientsRisk = "dangerous"
-	GetAnalysisByBarcode200JSONResponseBodyIngredientsRiskSafe      GetAnalysisByBarcode200JSONResponseBodyIngredientsRisk = "safe"
+	GetAnalysisByBarcode200JSONResponseBodyIngredientsRiskHigh   GetAnalysisByBarcode200JSONResponseBodyIngredientsRisk = "high"
+	GetAnalysisByBarcode200JSONResponseBodyIngredientsRiskLow    GetAnalysisByBarcode200JSONResponseBodyIngredientsRisk = "low"
+	GetAnalysisByBarcode200JSONResponseBodyIngredientsRiskMedium GetAnalysisByBarcode200JSONResponseBodyIngredientsRisk = "medium"
 )
 
 // Valid indicates whether the value is a known member of the GetAnalysisByBarcode200JSONResponseBodyIngredientsRisk enum.
 func (e GetAnalysisByBarcode200JSONResponseBodyIngredientsRisk) Valid() bool {
 	switch e {
-	case GetAnalysisByBarcode200JSONResponseBodyIngredientsRiskCaution:
+	case GetAnalysisByBarcode200JSONResponseBodyIngredientsRiskHigh:
 		return true
-	case GetAnalysisByBarcode200JSONResponseBodyIngredientsRiskDangerous:
+	case GetAnalysisByBarcode200JSONResponseBodyIngredientsRiskLow:
 		return true
-	case GetAnalysisByBarcode200JSONResponseBodyIngredientsRiskSafe:
+	case GetAnalysisByBarcode200JSONResponseBodyIngredientsRiskMedium:
 		return true
 	default:
 		return false

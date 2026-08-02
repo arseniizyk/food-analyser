@@ -109,10 +109,10 @@ cd backend
 task deps:update
 
 # Запуск миграций базы данных
-go run ./cmd/migrate -path ./configs/example.env
+go run ./cmd/migrate -path ./configs/.example.env
 
 # Запуск бэкенд-сервера
-go run ./cmd/app -path ./configs/example.env
+go run ./cmd/app -path ./configs/.example.env
 ```
 
 ### 3. ML OCR сервис (`/ml`)
