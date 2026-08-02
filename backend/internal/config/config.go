@@ -46,7 +46,9 @@ type MLConfig struct {
 }
 
 type LLMConfig struct {
-	// TODO implement LLM Service
+	APIKey string `env:"API_KEY" env-required:"true"`
+	URL    string `env:"URL" env-required:"true"`
+	Model  string `env:"MODEL" env-required:"true"`
 }
 
 type GoogleConfig struct {

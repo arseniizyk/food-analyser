@@ -1,21 +1,6 @@
 package models
 
-type GradeLevel string
-
-const (
-	GradeExcellent GradeLevel = "excellent"
-	GradeGood      GradeLevel = "good"
-	GradeAverage   GradeLevel = "average"
-	GradePoor      GradeLevel = "poor"
-)
-
-type SeverityLevel string
-
-const (
-	SeverityLow    SeverityLevel = "low"
-	SeverityMedium SeverityLevel = "medium"
-	SeverityHigh   SeverityLevel = "high"
-)
+import "github.com/invopop/jsonschema"
 
 type Analysis struct {
 	Barcode     string        `json:"barcode"`
@@ -24,6 +9,10 @@ type Analysis struct {
 	Summary     []SummaryItem `json:"summary"`
 	Risks       []Risk        `json:"risks"`
 	Ingredients []Ingredient  `json:"ingredients"`
+}
+
+type SummaryItem struct {
+	Message string `json:"message"`
 }
 
 type Ingredient struct {
@@ -38,7 +27,42 @@ type Risk struct {
 	Description string        `json:"description"`
 }
 
-type SummaryItem struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
+type GradeLevel string
+
+const (
+	GradeExcellent GradeLevel = "excellent"
+	GradeGood      GradeLevel = "good"
+	GradeAverage   GradeLevel = "average"
+	GradePoor      GradeLevel = "poor"
+)
+
+func (GradeLevel) JSONSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type: "string",
+		Enum: []any{
+			"excellent",
+			"good",
+			"average",
+			"poor",
+		},
+	}
+}
+
+type SeverityLevel string
+
+const (
+	SeverityLow    SeverityLevel = "low"
+	SeverityMedium SeverityLevel = "medium"
+	SeverityHigh   SeverityLevel = "high"
+)
+
+func (SeverityLevel) JSONSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type: "string",
+		Enum: []any{
+			"low",
+			"medium",
+			"high",
+		},
+	}
 }
