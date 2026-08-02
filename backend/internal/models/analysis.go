@@ -21,6 +21,14 @@ type Ingredient struct {
 	Description string              `json:"description"`
 }
 
+type IngredientRiskLevel string
+
+const (
+	RiskSafe      IngredientRiskLevel = "safe"
+	RiskCaution   IngredientRiskLevel = "caution"
+	RiskDangerous IngredientRiskLevel = "dangerous"
+)
+
 type Risk struct {
 	Severity    SeverityLevel `json:"severity"`
 	Title       string        `json:"title"`
