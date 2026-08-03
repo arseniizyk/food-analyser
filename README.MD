@@ -5,209 +5,186 @@
 [![Flutter Version](https://img.shields.io/badge/Flutter-3.12+-02569B?style=flat&logo=flutter)](https://flutter.dev/)
 [![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker)](https://www.docker.com/)
 
-**Food Analyser** is a microservice-based mobile and backend platform designed to analyze food product ingredients and barcodes. It enables users to scan barcodes or upload label images, automatically extract Russian text using an OCR machine learning model (PaddleOCR), analyze ingredient safety/health impacts via an LLM, and provide comprehensive nutrition and safety insights.
+**Food Analyser** is a microservice-based platform for food product analysis. The Flutter app lets users scan barcodes or capture ingredient labels, the Go backend combines product lookup, Google OAuth, OCR orchestration, and LLM-based ingredient analysis, and the Python service handles Russian OCR with PaddleOCR.
 
-> 🇷🇺 **Русская версия документации:** Доступна в файле [README_RU.md](./README_RU.md).
+This README is the English guide. The Russian version is available in [README_RU.md](./README_RU.md).
 
----
-
-## 📐 System Architecture
-
-The project consists of three core components:
+## What is in the repo
 
 ```mermaid
 graph TD
-    Client["📱 Mobile App (Flutter)"] -->|"REST API / JSON"| Backend["⚙️ Backend Service (Go)"]
-    Backend -->|"PostgreSQL Protocol"| DB[("🗄️ PostgreSQL Database")]
-    Backend -->|"HTTP / POST /ocr"| ML["🤖 ML Service (Python FastAPI / PaddleOCR)"]
-    Backend -->|"OAuth 2.0"| Google["🔑 Google OAuth Provider"]
+    Client["Mobile app (Flutter)"] -->|"REST / JSON"| Backend["Backend API (Go)"]
+    Backend -->|"PostgreSQL"| DB[("Database")]
+    Backend -->|"HTTP /ocr"| ML["OCR service (Python FastAPI)"]
+    Backend -->|"OAuth 2.0"| Google["Google OAuth"]
 ```
 
-### 1. Backend Service (`/backend`)
-- **Language & Runtime:** Go 1.26
-- **HTTP Framework:** `chi` router with structured logging (`slog`)
-- **API Spec:** OpenAPI 3.0 generated via `oapi-codegen`
-- **Database:** PostgreSQL with `pgx` connection pool and `golang-migrate` for schema migrations
-- **Integrations:** Google OAuth 2.0 authentication, internal HTTP client for ML OCR service, LLM analysis service
+### Backend (`/backend`)
 
-### 2. Machine Learning OCR Service (`/ml`)
-- **Language & Runtime:** Python 3.11 with `FastAPI` & `uvicorn`
-- **OCR Engine:** `PaddleOCR` (configured for Russian text recognition)
-- **Features:** Thread-safe model initialization, image pre-processing (Pillow/NumPy), text line confidence scoring, health monitoring
+- Go 1.26 service built on `chi` and `slog`
+- OpenAPI 3.0 contract generated with `oapi-codegen`
+- PostgreSQL access via `pgx` and migrations via `golang-migrate`
+- Integrations for Google OAuth, OCR, and LLM analysis
 
-### 3. Mobile Frontend App (`/app`)
-- **Framework:** Flutter (Dart SDK ^3.12.2)
-- **State Management:** Riverpod (`flutter_riverpod`)
-- **Features:** Barcode scanning (`mobile_scanner`), camera capture (`camera`), image picking (`image_picker`), Google Sign-In (`google_sign_in`), cross-platform navigation (`go_router`)
+### ML service (`/ml`)
 
----
+- Python 3.11 FastAPI app with `uvicorn`
+- PaddleOCR configured for Russian text
+- Health endpoint plus OCR inference endpoint
 
-## 📁 Repository Structure
+### Mobile app (`/app`)
+
+- Flutter 3.12+ app with Riverpod state management
+- Barcode scanning, camera capture, image picking, and Google Sign-In
+
+## Repository layout
 
 ```
 food-analyser/
-├── app/                  # Flutter cross-platform mobile application
-├── backend/              # Go REST API backend & database migrations
-│   ├── api/              # OpenAPI specs & generated code configuration
-│   ├── cmd/              # Main entrypoints (app, migrate)
-│   ├── configs/          # Example configuration files (.env)
-│   ├── internal/         # Business logic, HTTP handlers, repositories, services
-│   └── migrations/       # PostgreSQL migration scripts (.sql)
-├── ml/                   # Python FastAPI service for PaddleOCR inference
-├── static/               # Assets and brand icons
-├── docker-compose.yml    # Root multi-container orchestration
-└── Taskfile.yml          # Root Taskfile runner
+├── app/           # Flutter mobile app
+├── backend/       # Go backend and migrations
+├── ml/            # Python OCR service
+├── static/        # Shared static assets
+├── docker-compose.yml
+└── Taskfile.yml
 ```
 
----
+## Self-run setup
 
-## ⚡ Quick Start with Docker Compose
+The project can be started either with Docker Compose or service by service. The only mandatory setup step is to create a root `.env` file from the example before using Docker or the backend entrypoints.
 
-The easiest way to run the entire backend infrastructure (PostgreSQL, automatic migrations, ML OCR service, Go Backend) is using Docker Compose.
-
-### Prerequisites
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine with Docker Compose plugin installed.
-
-### Run Infrastructure
+### 1. Create the environment file
 
 ```bash
-# Clone the repository
+cp .example.env .env
+```
+
+Fill in the required values, especially:
+
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `LLM_API_KEY`
+- `LLM_MODEL`
+- `LLM_URL`
+
+The default ports in the example are:
+
+- backend HTTP: `8000`
+- ML service: `8888`
+- PostgreSQL: `5432`
+
+## Start with Docker Compose
+
+### Prerequisites
+
+- Docker Desktop or Docker Engine with the Compose plugin
+
+### Run everything
+
+```bash
 git clone https://github.com/arseniizyk/food-analyser.git
 cd food-analyser
-
-# Start all services (PostgreSQL, ML OCR service, Migrations, Backend)
+cp .example.env .env
 docker compose up -d --build
 ```
 
-The services will be exposed at:
-- **Backend REST API:** `http://localhost:8000`
-- **ML OCR Service:** `http://localhost:8001` (internal `http://ml:8000`)
-- **PostgreSQL Database:** `localhost:5432`
+After startup, the services are available at:
 
-To view logs or stop services:
+- Backend API: `http://localhost:8000`
+- ML OCR service: `http://localhost:8888`
+- PostgreSQL: `localhost:5432`
+
+To stop the stack:
+
 ```bash
-# View aggregated logs
-docker compose logs -f
-
-# Stop containers
 docker compose down
 ```
 
----
+## Run locally without Docker
 
-## ⚙️ Local Development Setup
+### Backend prerequisites
 
-If you wish to run services locally without Docker:
+- Go 1.26+
+- PostgreSQL running locally
+- A populated root `.env` file
 
-### 1. PostgreSQL Database
-Ensure PostgreSQL is running locally on port `5432` with a database named `food_analyser` (or adjust `.env`).
-
-### 2. Backend Service (`/backend`)
-
-**Prerequisites:** Go 1.26+, Task (optional)
+### Backend commands
 
 ```bash
 cd backend
-
-# Install formatters & dependencies
-task deps:update
-
-# Run database migrations
-go run ./cmd/migrate -path ./configs/example.env
-
-# Start backend server
-go run ./cmd/app -path ./configs/example.env
+go run ./cmd/migrate -path ../.example.env
+go run ./cmd/app -path ../.example.env
 ```
 
-### 3. ML OCR Service (`/ml`)
+Use `.env` instead of `.example.env` if you copied and edited the file.
 
-**Prerequisites:** Python 3.11+
+### ML service prerequisites
+
+- Python 3.11+
 
 ```bash
 cd ml
-
-# Create virtualenv and install dependencies
-python3 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
-
-# Run FastAPI server in dev mode with hot reload
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn main:app --host 0.0.0.0 --port 8888 --reload
 ```
 
-### 4. Mobile App (`/app`)
+### Flutter app prerequisites
 
-**Prerequisites:** Flutter SDK 3.12+
+- Flutter 3.12+
 
 ```bash
 cd app
-
-# Fetch dependencies
 flutter pub get
-
-# Run on emulator/connected device
 flutter run
 ```
 
----
+## Taskfile commands
 
-## 🛠 Taskfile Reference
+The root `Taskfile.yml` only provides the top-level Docker commands and includes the service-specific taskfiles.
 
-This repository includes a root `Taskfile.yml` as well as dedicated sub-Taskfiles in `backend/` and `ml/`.
+### From the repository root
 
-### Root Task Commands
+- `task up` - Build and start the full Docker stack
+- `task down` - Stop the Docker stack
+- `task backend:deps:update` - Run `go mod tidy`
+- `task backend:format` - Format backend Go code
+- `task backend:lint` - Run backend linting
+- `task backend:lint:fix` - Run backend linting with fixes
+- `task backend:gen` - Regenerate OpenAPI-based backend code
+- `task app:deps` - Fetch Flutter dependencies
+- `task app:run` - Run the Flutter app
+- `task app:build` - Build the Flutter APK
+- `task ml:setup` - Create the Python virtualenv and install ML dependencies
+- `task ml:run` - Run the ML OCR service
 
-| Command | Description |
-| :--- | :--- |
-| `task up` | Build and start all microservices using Docker Compose |
-| `task down` | Stop and remove Docker Compose containers |
-| `task logs` | Follow live container logs |
-| `task ps` | Display status of running containers |
-| `task restart` | Restart Docker Compose services |
-| `task lint` | Run Go and Python code linters |
-| `task format` | Run Go code formatters (`gofumpt`, `gci`) |
-| `task app:deps` | Run `flutter pub get` for the mobile app |
-| `task app:run` | Start the Flutter app |
-| `task app:build` | Build release APK for Flutter app |
+## API overview
 
----
+Backend endpoints:
 
-## 🔑 Environment Variables
+- `GET /api/v1/product/{barcode}` - Fetch product data by barcode
+- `POST /api/v1/analyze/{barcode}` - Analyze product ingredients
+- `POST /api/v1/auth/google` - Authenticate with Google OAuth
 
-The backend service is configured via environment variables or a `.env` file (see `backend/configs/example.env`):
+ML endpoints:
 
-| Variable | Default | Description |
-| :--- | :--- | :--- |
-| **HTTP_PORT** | `8000` | Port for the Go HTTP server |
-| **HTTP_HOST** | `localhost` | Host bind address for backend |
-| **POSTGRES_HOST** | `localhost` | PostgreSQL host |
-| **POSTGRES_PORT** | `5432` | PostgreSQL port |
-| **POSTGRES_USER** | `postgres` | Database username |
-| **POSTGRES_PASSWORD**| `postgres` | Database password |
-| **POSTGRES_DB** | `postgres` | Database name |
-| **POSTGRES_SSLMODE** | `disable` | SSL mode (`disable`, `require`) |
-| **ML_HOST** | `localhost` | Host for Python ML OCR service |
-| **ML_PORT** | `8888` | Port for Python ML OCR service |
-| **ML_TIMEOUT** | `10s` | HTTP timeout for OCR inference requests |
-| **GOOGLE_OAUTH_CLIENT_ID** | `""` | Google Client ID for user authentication |
+- `GET /health` - Health check
+- `POST /ocr` - OCR inference for uploaded images
 
----
+## Testing and local checks
 
-## 📡 API Overview
+```bash
+cd backend
+go test ./...
 
-The Backend API is defined using OpenAPI 3.0 (`backend/api/backend/v1/backend.openapi.yaml`).
+cd ml
+pip install -r requirements-dev.txt
 
-Key Endpoints:
-- **`GET /api/v1/product/{barcode}`** — Retrieve product information by barcode.
-- **`POST /api/v1/analyze/{barcode}`** — Analyze product ingredients and safety.
-- **`POST /api/v1/auth/google`** — Authenticate user via Google OAuth token.
+cd app
+flutter test
+flutter analyze
+```
 
-ML Service Endpoints (`/ml`):
-- **`GET /health`** — OCR model readiness and health status.
-- **`POST /ocr`** — Process multipart image upload and return recognized text lines with confidence scores.
+## License
 
----
-
-## 📄 License
-
-This project is licensed under the MIT License.
+MIT License.

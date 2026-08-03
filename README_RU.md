@@ -1,209 +1,191 @@
-# 🥗 Food Analyser (Анализатор Продуктов)
+# 🥗 Food Analyser
 
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![Python Version](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat&logo=python)](https://www.python.org/)
 [![Flutter Version](https://img.shields.io/badge/Flutter-3.12+-02569B?style=flat&logo=flutter)](https://flutter.dev/)
 [![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker)](https://www.docker.com/)
 
-**Food Analyser** — это микросервисная платформa, состоящая из мобильного приложения и бэкенд-инфраструктуры, предназначенная для анализа состава пищевых продуктов и распознавания штрихкодов. Приложение позволяет сканировать штрихкоды или загружать фотографии состава, автоматически распознавать русскоязычный текст с помощью ML-модели (PaddleOCR), анализировать безопасность ингредиентов и вредные добавки с использованием LLM и предоставлять подробный отчет пользователю.
+**Food Analyser** — микросервисная платформа для анализа пищевых продуктов. Мобильное приложение на Flutter умеет сканировать штрихкоды и фотографировать состав, бэкенд на Go отвечает за API, OAuth, запуск OCR и анализ состава через LLM, а Python-сервис выполняет OCR на PaddleOCR.
 
-## 📐 Архитектура системы
+Если нужна английская версия документации, см. [README.MD](./README.MD).
 
-Проект состоит из трех основных компонентов:
+## Что входит в репозиторий
 
 ```mermaid
 graph TD
-    Client["📱 Мобильное приложение (Flutter)"] -->|"REST API / JSON"| Backend["⚙️ Бэкенд сервис (Go)"]
-    Backend -->|"Протокол PostgreSQL"| DB[("🗄️ База данных PostgreSQL")]
-    Backend -->|"HTTP / POST /ocr"| ML["🤖 ML Сервис OCR (Python FastAPI / PaddleOCR)"]
-    Backend -->|"OAuth 2.0"| Google["🔑 Провайдер Google OAuth"]
+    Client["Мобильное приложение (Flutter)"] -->|"REST / JSON"| Backend["API бэкенда (Go)"]
+    Backend -->|"PostgreSQL"| DB[("База данных")]
+    Backend -->|"HTTP /ocr"| ML["OCR-сервис (Python FastAPI)"]
+    Backend -->|"OAuth 2.0"| Google["Google OAuth"]
 ```
 
-### 1. Бэкенд сервис (`/backend`)
-- **Язык и среда:** Go 1.26
-- **HTTP-фреймворк:** Роутер `chi` с структурированным логированием (`slog`)
-- **Спецификация API:** OpenAPI 3.0, генерация кода через `oapi-codegen`
-- **База данных:** PostgreSQL с пулом соединений `pgx` и миграциями через `golang-migrate`
-- **Интеграции:** Авторизация через Google OAuth 2.0, HTTP-клиент для ML OCR сервиса, LLM-сервис анализа состава
+### Бэкенд (`/backend`)
 
-### 2. ML OCR сервис (`/ml`)
-- **Язык и среда:** Python 3.11 с `FastAPI` и `uvicorn`
-- **Движок OCR:** `PaddleOCR` (настроен под распознавание русского языка)
-- **Возможности:** Потокобезопасная инициализация модели (Singleton), предобработка изображений (Pillow/NumPy), вычисление уверенности распознавания (confidence), проверка работоспособности (Health check)
+- Go 1.26, `chi`, `slog`
+- OpenAPI 3.0 и генерация через `oapi-codegen`
+- PostgreSQL, `pgx`, миграции через `golang-migrate`
+- Google OAuth, OCR и LLM-анализ состава
 
-### 3. Мобильное приложение (`/app`)
-- **Фреймворк:** Flutter (Dart SDK ^3.12.2)
-- **Управление состоянием:** Riverpod (`flutter_riverpod`)
-- **Функционал:** Сканирование штрихкодов (`mobile_scanner`), работа с камерой (`camera`), выбор фото (`image_picker`), в авторизция через Google (`google_sign_in`), кроссплатформенная навигация (`go_router`)
+### ML-сервис (`/ml`)
 
----
+- Python 3.11, FastAPI и `uvicorn`
+- PaddleOCR для русского текста
+- Health endpoint и endpoint для распознавания
 
-## 📁 Структура репозитория
+### Мобильное приложение (`/app`)
+
+- Flutter 3.12+ и Riverpod
+- Сканирование штрихкодов, камера, выбор фото, Google Sign-In
+
+## Структура репозитория
 
 ```
 food-analyser/
-├── app/                  # Кроссплатформенное мобильное приложение на Flutter
-├── backend/              # Бэкенд на Go и миграции базы данных
-│   ├── api/              # Спецификации OpenAPI и конфигурация генерации
-│   ├── cmd/              # Точки входа программ (app, migrate)
-│   ├── configs/          # Примеры файлов конфигурации (.env)
-│   ├── internal/         # Бизнес-логика, HTTP-хендлеры, репозитории, сервисы
-│   └── migrations/       # Скрипты миграций PostgreSQL (.sql)
-├── ml/                   # Python FastAPI сервис распознавания текста (PaddleOCR)
-├── static/               # Статические ресурсы и логотипы
-├── docker-compose.yml    # Файл оркестрации контейнеров
-└── Taskfile.yml          # Главный файл запуска команд Taskfile
+├── app/           # Мобильное приложение на Flutter
+├── backend/       # Go бэкенд и миграции
+├── ml/            # Python OCR-сервис
+├── static/        # Общие статические ресурсы
+├── docker-compose.yml
+└── Taskfile.yml
 ```
 
----
+## Самостоятельный запуск
 
-## ⚡ Быстрый запуск через Docker Compose
+Проект можно запускать через Docker Compose или по отдельности. Перед запуском нужно создать корневой `.env` на основе `.example.env`.
 
-Самый простой способ запустить всю бэкенд-инфраструктуру (PostgreSQL, автоматические миграции БД, ML OCR сервис и Go бэкенд) — использовать Docker Compose.
-
-### Требования
-- Установленный [Docker Desktop](https://www.docker.com/products/docker-desktop/) или Docker Engine с плагином Docker Compose.
-
-### Запуск контейнеров
+### 1. Подготовить конфиг
 
 ```bash
-# Клонирование репозитория
+cp .example.env .env
+```
+
+Обязательно заполните:
+
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `LLM_API_KEY`
+- `LLM_MODEL`
+- `LLM_URL`
+
+Порты по умолчанию:
+
+- бэкенд: `8000`
+- ML-сервис: `8888`
+- PostgreSQL: `5432`
+
+## Запуск через Docker Compose
+
+### Требования
+
+- Docker Desktop или Docker Engine с Compose plugin
+
+### Запуск
+
+```bash
 git clone https://github.com/arseniizyk/food-analyser.git
 cd food-analyser
-
-# Запуск всех сервисов (PostgreSQL, ML OCR, Миграции, Бэкенд)
+cp .example.env .env
 docker compose up -d --build
 ```
 
-Сервисы будут доступны по следующим адресам:
-- **Backend REST API:** `http://localhost:8000`
-- **ML OCR Сервис:** `http://localhost:8001` (внутренний адрес `http://ml:8000`)
-- **База данных PostgreSQL:** `localhost:5432`
+После старта сервисы доступны по адресам:
 
-Просмотр логов и остановка:
+- Backend API: `http://localhost:8000`
+- ML OCR сервис: `http://localhost:8888`
+- PostgreSQL: `localhost:5432`
+
+Остановка стека:
+
 ```bash
-# Просмотр общих логов
-docker compose logs -f
-
-# Остановка контейнеров
 docker compose down
 ```
 
----
+## Локальный запуск без Docker
 
-## ⚙️ Локальная разработка
+### Бэкенд
 
-Если вам необходимо запустить компоненты локально без Docker:
+Требования:
 
-### 1. База данных PostgreSQL
-Убедитесь, что локально запущен PostgreSQL на порту `5432` с базой данных `food_analyser` (или измените параметры в `.env`).
-
-### 2. Бэкенд сервис (`/backend`)
-
-**Требования:** Go 1.26+, Task (опционально)
+- Go 1.26+
+- локально запущенный PostgreSQL
+- заполненный `.env`
 
 ```bash
 cd backend
-
-# Установка форматировщиков и обновление зависимостей
-task deps:update
-
-# Запуск миграций базы данных
-go run ./cmd/migrate -path ./configs/.example.env
-
-# Запуск бэкенд-сервера
-go run ./cmd/app -path ./configs/.example.env
+go run ./cmd/migrate -path ../.example.env
+go run ./cmd/app -path ../.example.env
 ```
 
-### 3. ML OCR сервис (`/ml`)
+Если вы уже скопировали `.example.env` в `.env`, используйте `-path ../.env`.
 
-**Требования:** Python 3.11+
+### ML-сервис
+
+Требования:
+
+- Python 3.11+
 
 ```bash
 cd ml
-
-# Создание виртуального окружения и установка зависимостей
-python3 -m venv .venv
-source .venv/bin/activate  # Для Windows: .venv\Scripts\activate
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
-
-# Запуск сервера FastAPI с автоперезагрузкой (hot reload)
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn main:app --host 0.0.0.0 --port 8888 --reload
 ```
 
-### 4. Мобильное приложение (`/app`)
+### Мобильное приложение
 
-**Требования:** Flutter SDK 3.12+
+Требования:
+
+- Flutter 3.12+
 
 ```bash
 cd app
-
-# Загрузка зависимостей
 flutter pub get
-
-# Запуск на эмуляторе или подключенном устройстве
 flutter run
 ```
 
----
+## Команды Taskfile
 
-## 🛠 Справочник команд Taskfile
+В корне проекта есть `Taskfile.yml`, который подключает `backend/Taskfile.yml`, `ml/Taskfile.yml` и `app/Taskfile.yml`.
 
-В корне проекта находится главный `Taskfile.yml`, который объединяет команды бэкенда и ML-сервиса.
+### Основные команды
 
-### Команды главного Taskfile
+- `task up` — собрать и запустить весь стек через Docker Compose
+- `task down` — остановить стек Docker Compose
+- `task backend:deps:update` — выполнить `go mod tidy`
+- `task backend:format` — отформатировать backend-код
+- `task backend:lint` — запустить линтер backend
+- `task backend:lint:fix` — запустить линтер backend с автоисправлением
+- `task backend:gen` — сгенерировать код из OpenAPI
+- `task app:deps` — установить зависимости Flutter-приложения
+- `task app:run` — запустить Flutter-приложение
+- `task app:build` — собрать APK
+- `task ml:setup` — создать Python virtualenv и установить зависимости
+- `task ml:run` — запустить OCR-сервис
 
-| Команда | Описание |
-| :--- | :--- |
-| `task up` | Собрать и запустить все микросервисы через Docker Compose |
-| `task down` | Остановить и удалить контейнеры Docker Compose |
-| `task logs` | Просматривать логи контейнеров в реальном времени |
-| `task ps` | Показать статус запущенных контейнеров |
-| `task restart` | Перезапустить сервисы Docker Compose |
-| `task lint` | Запустить линтеры для Go и Python кода |
-| `task format` | Запустить форматирование Go-кода (`gofumpt`, `gci`) |
-| `task app:deps` | Установить зависимости Flutter приложения (`flutter pub get`) |
-| `task app:run` | Запустить мобильное приложение Flutter |
-| `task app:build` | Собрать релизный APK Flutter приложения |
+## API
 
----
+Основные эндпоинты бэкенда:
 
-## 🔑 Переменные окружения
+- `GET /api/v1/product/{barcode}` — получить информацию о товаре
+- `POST /api/v1/analyze/{barcode}` — проанализировать состав продукта
+- `POST /api/v1/auth/google` — авторизация через Google OAuth
 
-Бэкенд сервис настраивается через переменные окружения или `.env` файл (см. `backend/configs/example.env`):
+Эндпоинты ML-сервиса:
 
-| Переменная | Значение по умолчанию | Описание |
-| :--- | :--- | :--- |
-| **HTTP_PORT** | `8000` | Порт для HTTP бэкенд-сервера Go |
-| **HTTP_HOST** | `localhost` | Хост бэкенд-сервера |
-| **POSTGRES_HOST** | `localhost` | Хост базы данных PostgreSQL |
-| **POSTGRES_PORT** | `5432` | Порт PostgreSQL |
-| **POSTGRES_USER** | `postgres` | Имя пользователя БД |
-| **POSTGRES_PASSWORD**| `postgres` | Пароль пользователя БД |
-| **POSTGRES_DB** | `postgres` | Имя базы данных |
-| **POSTGRES_SSLMODE** | `disable` | Режим SSL (`disable`, `require`) |
-| **ML_HOST** | `localhost` | Хост ML OCR сервиса на Python |
-| **ML_PORT** | `8888` | Порт ML OCR сервиса |
-| **ML_TIMEOUT** | `10s` | Таймаут для запроса к OCR сервису |
-| **GOOGLE_OAUTH_CLIENT_ID** | `""` | Google Client ID для аутентификации пользователей |
+- `GET /health` — проверка готовности сервиса
+- `POST /ocr` — распознавание текста из изображения
 
----
+## Проверка локального запуска
 
-## 📡 Описание API
+```bash
+cd backend
+go test ./...
 
-Бэкенд API спроектирован по стандарту OpenAPI 3.0 (`backend/api/backend/v1/backend.openapi.yaml`).
+cd app
+flutter analyze
+flutter test
+```
 
-Основные эндпоинты:
-- **`GET /api/v1/product/{barcode}`** — Получение информации о продукте по штрихкоду.
-- **`POST /api/v1/analyze/{barcode}`** — Анализ состава продукта и безопасности ингредиентов.
-- **`POST /api/v1/auth/google`** — Аутентификация пользователя через Google OAuth токен.
+## Лицензия
 
-Эндпоинты ML сервиса (`/ml`):
-- **`GET /health`** — Проверка готовности OCR модели и статуса сервиса.
-- **`POST /ocr`** — Загрузка изображения состава товара и распознавание текста с оценкой уверенности.
-
----
-
-## 📄 Лицензия
-
-Проект распространяется с открытым исходным кодом. См. лицензии сторонних библиотек в соответствующих директориях.
+MIT License.
