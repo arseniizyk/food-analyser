@@ -48,3 +48,4 @@ backend/configs/dev.env
 bin
 .claude
 /backend/migrate.exe
+.ruff_cache/

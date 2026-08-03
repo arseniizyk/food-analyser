@@ -12,16 +12,16 @@ from contextlib import asynccontextmanager
 
 import numpy as np
 import uvicorn
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from paddleocr import PaddleOCR
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 # ---------------------------
 # CONFIG
 # ---------------------------
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-PORT = int(os.getenv("ML_PORT", 8888))
+PORT = int(os.getenv("ML_PORT", "8888"))
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
 
 # ---------------------------
@@ -137,7 +137,7 @@ async def health():
 
 
 @app.post("/ocr")
-async def recognize_text(file: UploadFile = File(...)):
+async def recognize_text(file: UploadFile = File(...)):  # noqa: B008
     """
     Recognize text from an image.
     """
@@ -159,7 +159,7 @@ async def recognize_text(file: UploadFile = File(...)):
         try:
             image = Image.open(io.BytesIO(content))
             image.load()
-        except Exception:
+        except UnidentifiedImageError:
             logger.warning("Uploaded file could not be decoded as an image")
             raise HTTPException(
                 status_code=400,

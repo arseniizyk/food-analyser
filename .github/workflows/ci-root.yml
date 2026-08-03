@@ -1,0 +1,56 @@
+name: Root CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docker-compose.yml"
+      - "Taskfile.yml"
+      - "*.md"
+      - "static/**"
+      - ".github/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "docker-compose.yml"
+      - "Taskfile.yml"
+      - "*.md"
+      - "static/**"
+      - ".github/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker-compose-config:
+    name: Docker Compose Config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate docker-compose config
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_PORT: "5432"
+          HTTP_PORT: "8000"
+          HTTP_HOST: localhost
+          ML_PORT: "8888"
+          ML_HOST: localhost
+          ML_TIMEOUT: "10s"
+        run: docker compose config --quiet
+
+  openapi-lint:
+    name: OpenAPI Spec Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Lint OpenAPI spec
+        run: npx @redocly/cli lint backend/api/backend/v1/backend.openapi.yaml
