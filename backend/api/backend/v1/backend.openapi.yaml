@@ -1,6 +1,6 @@
 openapi: 3.0.3
 servers:
-  - url: http://localhost:8000
+  - url: http://0.0.0.0:8000
     description: Local Development
   - url: http://food_backend:8000
     description: Inside the docker container
@@ -10,6 +10,7 @@ info:
   version: 1.0.0
   description: Backend для работы анализатора продуктов
   license:
+    url: https://github.com/arseniizyk/food-analyser/blob/07936fac66da411a4cb4464d4cb4e53e7f857cec/LICENSE
     name: MIT
 
 tags:
