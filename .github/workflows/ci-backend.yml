@@ -49,19 +49,12 @@ jobs:
       - name: Check import ordering (gci)
         run: |
           go install github.com/daixiang0/gci@v0.14.0
-          export PATH="$(go env GOPATH)/bin:$PATH"
-      
-          gci --version
-      
-          gci diff . \
-            -s standard \
-            -s default \
-            -s "prefix(github.com/arseniizyk/food-analyser/backend)" \
-            > gci.diff
-      
-          if [ -s gci.diff ]; then
+          DIFF=$(gci write -s standard -s default -s "prefix(github.com/arseniizyk/food-analyser/backend)" --dry-run -l ./...)
+          if [ -n "$DIFF" ]; then
             echo "::error::Imports not ordered with gci:"
-            cat gci.diff
+            echo "$DIFF"
+            echo ""
+            echo "Run: gci write -s standard -s default -s \"prefix(github.com/arseniizyk/food-analyser/backend)\" ."
             exit 1
           fi
         working-directory: backend
