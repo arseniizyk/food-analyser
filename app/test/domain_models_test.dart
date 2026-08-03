@@ -24,7 +24,6 @@ void main() {
 
   test('ScanSession tracks completed analysis state', () {
     final analysis = Analysis(
-      id: 'analysis-1',
       barcode: '460000000001',
       userId: 'guest-local',
       grade: 'good',

@@ -1,6 +1,5 @@
 class Analysis {
   const Analysis({
-    required this.id,
     required this.barcode,
     this.userId,
     required this.score,
@@ -11,7 +10,6 @@ class Analysis {
     required this.ingredients,
   });
 
-  final String id;
   final String barcode;
   final String? userId;
   final HealthScore score;
@@ -23,7 +21,6 @@ class Analysis {
 
   factory Analysis.fromJson(Map<String, Object?> json) {
     return Analysis(
-      id: json['id'] as String? ?? '',
       barcode: json['barcode'] as String? ?? '',
       userId: json['userId'] as String?,
       score: HealthScore.fromJson(json['score']),
@@ -81,7 +78,6 @@ class Analysis {
 
   Map<String, Object?> toJson() {
     return {
-      'id': id,
       'barcode': barcode,
       'userId': userId,
       'score': score.toJson(),

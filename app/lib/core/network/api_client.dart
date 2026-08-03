@@ -48,7 +48,6 @@ class FakeApiClient implements ApiClient {
     await Future<void>.delayed(const Duration(milliseconds: 700));
     final score = 85;
     final analysis = {
-      'id': 'analysis-${DateTime.now().microsecondsSinceEpoch}',
       'barcode': barcode,
       'userId': userId,
       'score': score,
