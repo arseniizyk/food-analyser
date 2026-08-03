@@ -1,15 +1,18 @@
 version: "3"
 
 tasks:
+  build:release:
+    desc: "Release build"
+    cmds:
+      - flutter build apk --release
+
   run:
     desc: "Run flutter app"
-    dir: app
     cmds:
       - flutter clean
       - flutter run
 
   deps:
     desc: "Install Flutter dependencies for mobile app"
-    dir: app
     cmds:
       - flutter pub get
