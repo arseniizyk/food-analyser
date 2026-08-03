@@ -12,6 +12,7 @@ on:
       - "static/**"
       - ".github/**"
       - "backend/api/**"
+      - ".github/workflows/ci-root.yml"
   pull_request:
     branches: [main]
     paths:
@@ -23,6 +24,7 @@ on:
       - "static/**"
       - ".github/**"
       - "backend/api/**"
+      - ".github/workflows/ci-root.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
