@@ -25,9 +25,17 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     go build -trimpath -ldflags="-s -w" \
     -o /out/migrate ./cmd/migrate
 
+# Healthcheck
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -trimpath -ldflags="-s -w" \
+    -o /out/healthcheck ./cmd/healthcheck
+
 FROM gcr.io/distroless/static-debian12 AS app
 
 COPY --from=builder /out/app /app
+COPY --from=builder /out/healthcheck /healthcheck
 
 USER nonroot:nonroot
 

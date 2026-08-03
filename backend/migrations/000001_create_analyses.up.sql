@@ -7,5 +7,7 @@ CREATE TABLE analyses (
     ),
     summary JSONB NOT NULL,
     risks JSONB NOT NULL,
-    ingredients JSONB NOT NULL
+    ingredients JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

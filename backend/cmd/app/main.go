@@ -81,7 +81,7 @@ func main() {
 
 	apiv1.HandlerFromMux(h, r)
 	server := http.Server{
-		Addr:              cfg.HTTP.Address(),
+		Addr:              fmt.Sprintf(":%d", cfg.HTTP.Port),
 		Handler:           r,
 		ReadTimeout:       cfg.HTTP.ReadTimeout,
 		ReadHeaderTimeout: cfg.HTTP.ReadHeaderTimeout,

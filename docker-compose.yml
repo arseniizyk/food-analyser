@@ -38,8 +38,8 @@ services:
                   "-c",
                   "import urllib.request; urllib.request.urlopen('http://localhost:${ML_PORT}/health')",
               ]
-            interval: 15s
-            timeout: 5s
+            interval: 30s
+            timeout: 20s
             retries: 5
             start_period: 30s
         networks:
@@ -71,6 +71,12 @@ services:
             HTTP_PORT: ${HTTP_PORT}
         ports:
             - '${HTTP_PORT}:${HTTP_PORT}'
+        healthcheck:
+            test: ["CMD", "/healthcheck"]
+            interval: 10s
+            timeout: 3s
+            retries: 3
+            start_period: 5s
         depends_on:
             postgres:
                 condition: service_healthy
