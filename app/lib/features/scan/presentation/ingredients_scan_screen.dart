@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:camera/camera.dart';
@@ -31,6 +32,7 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
   bool _isInitializingCamera = false;
   bool _isProcessing = false;
   bool _isTakingPicture = false;
+  String? _capturedImagePath;
   String? _cameraError;
   Rect _cropRect = const Rect.fromLTRB(0.275, 0.31, 0.725, 0.49);
 
@@ -139,7 +141,8 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
     } else if (state == AppLifecycleState.resumed &&
         _permissionStatus == CameraPermissionStatus.granted &&
         !_isProcessing &&
-        !_isTakingPicture) {
+        !_isTakingPicture &&
+        _capturedImagePath == null) {
       controller.resumePreview();
     }
   }
@@ -147,6 +150,10 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    final capturedImagePath = _capturedImagePath;
+    if (capturedImagePath != null) {
+      unawaited(File(capturedImagePath).delete());
+    }
     _controller?.dispose();
     super.dispose();
   }
@@ -168,26 +175,72 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
     }
 
     setState(() {
-      _isProcessing = true;
       _isTakingPicture = true;
     });
     await HapticFeedback.mediumImpact();
 
     try {
       final picture = await controller.takePicture();
-      final bytes = await File(picture.path).readAsBytes();
+      if (!mounted) {
+        return;
+      }
+
+      await controller.pausePreview();
+      ref.read(scanControllerProvider.notifier).reset();
+
+      final previousCapturedImagePath = _capturedImagePath;
+      if (previousCapturedImagePath != null &&
+          previousCapturedImagePath != picture.path) {
+        try {
+          await File(previousCapturedImagePath).delete();
+        } catch (_) {
+          // Best-effort cleanup for temporary review images.
+        }
+      }
+
+      setState(() {
+        _capturedImagePath = picture.path;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to capture image: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isTakingPicture = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _scanCapturedImage() async {
+    final capturedImagePath = _capturedImagePath;
+    if (capturedImagePath == null || _isProcessing || _isTakingPicture) {
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+    });
+    await HapticFeedback.mediumImpact();
+
+    try {
+      final bytes = await File(capturedImagePath).readAsBytes();
       final image = img.decodeImage(bytes);
       if (image == null) {
-        throw Exception('Failed to decode camera frame.');
+        throw Exception('Failed to decode captured image.');
       }
 
       final cropX = (_cropRect.left * image.width).round().clamp(
         0,
-        image.width,
+        image.width - 1,
       );
       final cropY = (_cropRect.top * image.height).round().clamp(
         0,
-        image.height,
+        image.height - 1,
       );
       final cropW = (_cropRect.width * image.width).round().clamp(
         1,
@@ -230,9 +283,34 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
       if (mounted) {
         setState(() {
           _isProcessing = false;
-          _isTakingPicture = false;
         });
       }
+    }
+  }
+
+  Future<void> _retakePhoto() async {
+    final capturedImagePath = _capturedImagePath;
+    if (capturedImagePath == null || _isProcessing || _isTakingPicture) {
+      return;
+    }
+
+    final controller = _controller;
+    if (controller != null && controller.value.isInitialized) {
+      await controller.resumePreview();
+    }
+
+    if (mounted) {
+      setState(() {
+        _capturedImagePath = null;
+      });
+    }
+
+    ref.read(scanControllerProvider.notifier).reset();
+
+    try {
+      await File(capturedImagePath).delete();
+    } catch (_) {
+      // Best-effort cleanup for the discarded photo.
     }
   }
 
@@ -283,6 +361,7 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
         controller != null &&
         controller.value.isInitialized &&
         _cameraError == null;
+    final hasCapturedImage = _capturedImagePath != null;
     final isLoading = scanState.isLoading || _isProcessing || _isTakingPicture;
 
     return Scaffold(
@@ -337,31 +416,46 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
             : Stack(
                 fit: StackFit.expand,
                 children: [
-                  if (isCameraReady) CameraPreview(controller),
-                  MovableSelectionOverlay(
-                    onChanged: (rect) {
-                      _cropRect = rect;
-                    },
-                  ),
+                  if (!hasCapturedImage && isCameraReady)
+                    CameraPreview(controller),
+                  if (hasCapturedImage)
+                    Positioned.fill(
+                      child: Image.file(
+                        File(_capturedImagePath!),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  if (hasCapturedImage)
+                    MovableSelectionOverlay(
+                      onChanged: (rect) {
+                        _cropRect = rect;
+                      },
+                    ),
                   _TopBar(
-                    title: 'Scan Ingredients',
+                    title: hasCapturedImage
+                        ? 'Review Ingredients'
+                        : 'Scan Ingredients',
                     torchEnabled:
-                        controller!.value.flashMode == FlashMode.torch,
+                        !hasCapturedImage &&
+                        controller?.value.flashMode == FlashMode.torch,
                     onBack: _handleBack,
-                    onToggleTorch: () async {
-                      final cameraController = _controller;
-                      if (cameraController == null ||
-                          !cameraController.value.isInitialized) {
-                        return;
-                      }
+                    onToggleTorch: hasCapturedImage
+                        ? null
+                        : () async {
+                            final cameraController = _controller;
+                            if (cameraController == null ||
+                                !cameraController.value.isInitialized) {
+                              return;
+                            }
 
-                      await cameraController.setFlashMode(
-                        cameraController.value.flashMode == FlashMode.torch
-                            ? FlashMode.off
-                            : FlashMode.torch,
-                      );
-                      if (mounted) setState(() {});
-                    },
+                            await cameraController.setFlashMode(
+                              cameraController.value.flashMode ==
+                                      FlashMode.torch
+                                  ? FlashMode.off
+                                  : FlashMode.torch,
+                            );
+                            if (mounted) setState(() {});
+                          },
                   ),
                   if (isLoading) const _ProcessingOverlay(),
                   Positioned(
@@ -369,10 +463,13 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
                     right: 20,
                     bottom: 20,
                     child: _BottomPanel(
+                      hasCapturedImage: hasCapturedImage,
                       isLoading: isLoading,
                       isReady: isCameraReady,
                       error: scanState.error?.toString(),
                       onCapture: _captureIngredients,
+                      onScan: _scanCapturedImage,
+                      onRetake: _retakePhoto,
                     ),
                   ),
                 ],
@@ -393,7 +490,7 @@ class _TopBar extends StatelessWidget {
   final String title;
   final bool torchEnabled;
   final VoidCallback onBack;
-  final VoidCallback onToggleTorch;
+  final VoidCallback? onToggleTorch;
 
   @override
   Widget build(BuildContext context) {
@@ -458,16 +555,22 @@ class _ProcessingOverlay extends StatelessWidget {
 
 class _BottomPanel extends StatelessWidget {
   const _BottomPanel({
+    required this.hasCapturedImage,
     required this.isLoading,
     required this.isReady,
     required this.error,
     required this.onCapture,
+    required this.onScan,
+    required this.onRetake,
   });
 
+  final bool hasCapturedImage;
   final bool isLoading;
   final bool isReady;
   final String? error;
   final VoidCallback onCapture;
+  final VoidCallback onScan;
+  final VoidCallback onRetake;
 
   @override
   Widget build(BuildContext context) {
@@ -490,22 +593,66 @@ class _BottomPanel extends StatelessWidget {
           ),
           const SizedBox(height: 12),
         ],
-        ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
-            minimumSize: const Size.fromHeight(52),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+        if (!hasCapturedImage)
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              minimumSize: const Size.fromHeight(52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
             ),
+            onPressed: isLoading || !isReady ? null : onCapture,
+            icon: const Icon(Icons.camera_alt),
+            label: Text(
+              isReady ? 'Take Photo' : 'Waiting for camera...',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          )
+        else ...[
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(52),
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white54),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  onPressed: isLoading ? null : onRetake,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text(
+                    'Retake',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                    minimumSize: const Size.fromHeight(52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  onPressed: isLoading ? null : onScan,
+                  icon: const Icon(Icons.document_scanner),
+                  label: const Text(
+                    'Scan',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
           ),
-          onPressed: isLoading || !isReady ? null : onCapture,
-          icon: const Icon(Icons.camera_alt),
-          label: Text(
-            isReady ? 'Scan Selected Area' : 'Waiting for camera...',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-        ),
+        ],
       ],
     );
   }

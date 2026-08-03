@@ -36,7 +36,7 @@ class ScanRepositoryImpl implements ScanRepository {
     String? userId,
     required String imagePath,
   }) async {
-    final barcode = session.barcode ?? 'manual-${session.id}';
+    final barcode = session.barcode ?? session.id.replaceFirst('scan-', '');
     final analysis = await analysisRepository.analyzeProduct(
       barcode: barcode,
       imagePath: imagePath,

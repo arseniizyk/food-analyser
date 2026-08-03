@@ -54,13 +54,8 @@ class _MovableSelectionOverlayState extends State<MovableSelectionOverlay> {
   }
 
   Rect _clampRect(Rect r) {
-    final minW = _parentSize.width * 0.18;
-    final minH = _parentSize.height * 0.1;
-    final maxW = _parentSize.width * 0.75;
-    final maxH = _parentSize.height * 0.55;
-
-    final w = r.width.clamp(minW, maxW);
-    final h = r.height.clamp(minH, maxH);
+    final w = r.width.clamp(0.0, _parentSize.width);
+    final h = r.height.clamp(0.0, _parentSize.height);
 
     var clamped = Rect.fromCenter(center: r.center, width: w, height: h);
 
@@ -154,24 +149,16 @@ class _MovableSelectionOverlayState extends State<MovableSelectionOverlay> {
       _applyRect(shifted);
     } else {
       final c = _activeCorner!;
-      final minW = _parentSize.width * 0.18;
-      final minH = _parentSize.height * 0.1;
 
       double l = start.left, t = start.top, r = start.right, b = start.bottom;
 
-      if (c.x < 0) l = (start.left + delta.dx).clamp(0.0, start.right - minW);
+      if (c.x < 0) l = (start.left + delta.dx).clamp(0.0, start.right);
       if (c.x > 0) {
-        r = (start.right + delta.dx).clamp(
-          start.left + minW,
-          _parentSize.width,
-        );
+        r = (start.right + delta.dx).clamp(start.left, _parentSize.width);
       }
-      if (c.y < 0) t = (start.top + delta.dy).clamp(0.0, start.bottom - minH);
+      if (c.y < 0) t = (start.top + delta.dy).clamp(0.0, start.bottom);
       if (c.y > 0) {
-        b = (start.bottom + delta.dy).clamp(
-          start.top + minH,
-          _parentSize.height,
-        );
+        b = (start.bottom + delta.dy).clamp(start.top, _parentSize.height);
       }
       _applyRect(Rect.fromLTRB(l, t, r, b));
     }
@@ -253,16 +240,16 @@ class _MovableSelectionOverlayState extends State<MovableSelectionOverlay> {
                     ),
                   ),
                 ),
-              const Positioned(
-                left: 12,
-                right: 12,
-                bottom: 12,
-                child: Text(
-                  'Drag the frame to select the ingredients area',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70),
-                ),
-              ),
+              // const Positioned(
+              //   left: 12,
+              //   right: 12,
+              //   bottom: 12,
+              //   child: Text(
+              //     'Drag the frame to select the ingredients area',
+              //     textAlign: TextAlign.center,
+              //     style: TextStyle(color: Colors.white70),
+              //   ),
+              // ),
             ],
           );
         },
