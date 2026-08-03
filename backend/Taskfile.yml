@@ -10,10 +10,12 @@ vars:
 
   BIN_DIR: "{{.ROOT_DIR}}/bin"
 
-  GOLANGCI_LINT: "{{.BIN_DIR}}/golangci-lint"
-  GCI: "{{.BIN_DIR}}/gci"
-  GOFUMPT: "{{.BIN_DIR}}/gofumpt"
-  OAPI_CODEGEN: "{{.BIN_DIR}}/oapi-codegen"
+  BIN_EXT: '{{if eq OS "windows"}}.exe{{end}}' # shit for windows
+  GCI: '{{.BIN_DIR}}/gci{{.BIN_EXT}}'
+  GOFUMPT: '{{.BIN_DIR}}/gofumpt{{.BIN_EXT}}'
+  OAPI_CODEGEN: '{{.BIN_DIR}}/oapi-codegen{{.BIN_EXT}}'
+  SQLC: '{{.BIN_DIR}}/sqlc{{.BIN_EXT}}'
+  GOLANGCI_LINT: "{{.BIN_DIR}}/golangci-lint{{.BIN_EXT}}"
 
   NODE_MODULES_DIR: "{{.ROOT_DIR}}/node_modules/.bin"
   REDOCLY: "{{.NODE_MODULES_DIR}}/redocly"
@@ -42,24 +44,14 @@ tasks:
       - test -x {{.GCI}}
 
   format:
-    desc: "Форматирование Go-кода"
-    deps:
-      - install-formatters
+    deps: [install-formatters]
     cmds:
       - |
-        echo "🧼 Running gofumpt..."
-        find . -type f -name '*.go' \
-          ! -path './vendor/*' \
-          ! -path '*/mocks/*' \
-          -exec {{.GOFUMPT}} -extra -w {} +
-
+        echo "🧼 Форматируем backend через gofumpt ..."
+        git ls-files './server/*.go' | xargs {{.GOFUMPT}} -extra -w
       - |
-        echo "🎯 Running gci..."
-        {{.GCI}} write \
-          -s standard \
-          -s default \
-          -s "prefix(github.com/arseniizyk/food-analyser)" \
-          .
+        echo "🎯 Сортируем импорты backend через gci ..."
+        git ls-files './server/*.go' | xargs {{.GCI}} write -s standard -s default -s "prefix(github.com/arseniizyk/food-analyser/backend/)"
 
   install-golangci-lint:
     desc: "Устанавливает golangci-lint"
@@ -80,6 +72,13 @@ tasks:
       - install-golangci-lint
     cmds:
       - '{{.GOLANGCI_LINT}} run --config=.golangci.yml'
+
+  lint:fix:
+    desc: "Запуск golangci-lint с возможным fix"
+    deps:
+      - install-golangci-lint
+    cmds:
+      - '{{.GOLANGCI_LINT}} run --config=.golangci.yml --fix'
 
   redocly-cli:install:
     desc: "Установить Redocly CLI"
