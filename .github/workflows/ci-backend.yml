@@ -40,7 +40,7 @@ jobs:
               echo "Run: gofumpt -w ."
               exit 1
             fi
-          working-directory: backend 
+        working-directory: backend
 
       - name: Check import ordering (gci)
         run: |
