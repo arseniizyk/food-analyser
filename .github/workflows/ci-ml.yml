@@ -44,7 +44,7 @@ jobs:
         working-directory: ml
 
       - name: Type check with mypy
-        run: mypy main.py --ignore-missing-imports
+        run: mypy . --ignore-missing-imports
         working-directory: ml
 
   docker-build:
@@ -53,6 +53,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: docker build -t food-ml-test .
-        working-directory: ml
+      - name: Set up Docker Build
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image with Cache
+        uses: docker/build-push-action@v6
+        with:
+          context: ml
+          file: ml/Dockerfile
+          push: false
+          tags: food-ml-test:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

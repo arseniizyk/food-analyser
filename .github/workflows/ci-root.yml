@@ -5,18 +5,24 @@ on:
     branches: [main]
     paths:
       - "docker-compose.yml"
+      - ".example.env"
       - "Taskfile.yml"
       - "*.md"
+      - "*.MD"
       - "static/**"
       - ".github/**"
+      - "backend/api/**"
   pull_request:
     branches: [main]
     paths:
       - "docker-compose.yml"
+      - ".example.env"
       - "Taskfile.yml"
       - "*.md"
+      - "*.MD"
       - "static/**"
       - ".github/**"
+      - "backend/api/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -30,6 +36,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Validate docker-compose config
+        run: |
+          if [ -f .example.env ]; then
+            cp .example.env .env
+          fi
+          docker compose config --quiet
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -40,7 +51,6 @@ jobs:
           ML_PORT: "8888"
           ML_HOST: localhost
           ML_TIMEOUT: "10s"
-        run: docker compose config --quiet
 
   openapi-lint:
     name: OpenAPI Spec Validation
@@ -53,4 +63,4 @@ jobs:
           node-version: "20"
 
       - name: Lint OpenAPI spec
-        run: npx @redocly/cli lint backend/api/backend/v1/backend.openapi.yaml
+        run: npx @redocly/cli@2.43.3 lint backend/api/backend/v1/backend.openapi.yaml

@@ -25,18 +25,22 @@ jobs:
         with:
           go-version: "1.26"
           cache: true
+          cache-dependency-path: backend/go.sum
 
       - name: Check formatting (gofumpt)
         run: |
-          go install mvdan.cc/gofumpt@v0.9.2
-          DIFF=$(gofumpt -extra -l ./...)
-          if [ -n "$DIFF" ]; then
-            echo "::error::Files not formatted with gofumpt:"
-            echo "$DIFF"
-            echo ""
-            echo "Run: gofumpt -extra -w ."
-            exit 1
-          fi
+            go install mvdan.cc/gofumpt@v0.9.2
+            export PATH="$(go env GOPATH)/bin:$PATH"
+            
+            DIFF=$(gofumpt -l ./...)
+            if [ -n "$DIFF" ]; then
+              echo "::error::Files not formatted with gofumpt:"
+              echo "$DIFF"
+              echo ""
+              echo "Run: gofumpt -w ."
+              exit 1
+            fi
+          working-directory: backend 
 
       - name: Check import ordering (gci)
         run: |
@@ -49,6 +53,7 @@ jobs:
             echo "Run: gci write -s standard -s default -s \"prefix(github.com/arseniizyk/food-analyser/backend)\" ."
             exit 1
           fi
+        working-directory: backend
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v7
@@ -67,6 +72,7 @@ jobs:
         with:
           go-version: "1.26"
           cache: true
+          cache-dependency-path: backend/go.sum
 
       - name: Build
         run: go build ./...
@@ -86,6 +92,7 @@ jobs:
         with:
           go-version: "1.26"
           cache: true
+          cache-dependency-path: backend/go.sum
 
       - name: Install oapi-codegen
         run: go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.7.1
@@ -96,7 +103,8 @@ jobs:
 
       - name: Check for uncommitted generated code
         run: |
-          if ! git diff --exit-code backend/pkg/; then
-            echo "::error::Generated OpenAPI code is out of date. Run 'task backend:gen' and commit the changes."
+          if [ -n "$(git status --porcelain backend/pkg/)" ]; then
+            echo "::error::Generated OpenAPI code is out of date or missing. Run 'task backend:gen' and commit the changes."
+            git status --porcelain backend/pkg/
             exit 1
           fi
