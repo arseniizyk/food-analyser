@@ -1,4 +1,4 @@
-package user
+package analysis
 
 import (
 	sq "github.com/Masterminds/squirrel"
@@ -11,5 +11,8 @@ type Repository struct {
 }
 
 func New(pool *pgxpool.Pool) *Repository {
-	return &Repository{pool: pool, sb: sq.StatementBuilder.PlaceholderFormat(sq.Dollar)}
+	return &Repository{
+		pool: pool,
+		sb:   sq.StatementBuilder.PlaceholderFormat(sq.Dollar),
+	}
 }

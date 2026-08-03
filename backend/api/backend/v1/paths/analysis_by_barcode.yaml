@@ -2,7 +2,7 @@ parameters:
   - $ref: ../params/barcode.yaml
 
 get:
-  summary: Get analysis for a product
+  summary: Get analysis by barcode
   operationId: GetAnalysisByBarcode
   tags:
     - Barcode, Analysis

@@ -1,6 +1,6 @@
 type: object
 required:
-  - id
+  - barcode
   - score
   - grade
   - summary
@@ -9,7 +9,7 @@ required:
 properties:
   barcode:
     type: string
-    example: 454545454545
+    example: "978020137962"
   score:
     type: integer
     description: Оценка продукта

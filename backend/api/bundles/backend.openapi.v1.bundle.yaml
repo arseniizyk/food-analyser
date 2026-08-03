@@ -11,7 +11,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/barcode'
     get:
-      summary: Get analysis for a product
+      summary: Get analysis for a analysis
       operationId: GetAnalysisByBarcode
       tags:
         - Barcode, Analysis
@@ -50,7 +50,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/barcode'
     post:
-      summary: Analyze product nutrition photo
+      summary: Analyze analysis nutrition photo
       operationId: AnalyzeProduct
       tags:
         - Product, Analysis
@@ -197,7 +197,7 @@ components:
       properties:
         id:
           type: string
-          example: product-45454545
+          example: analysis-45454545
         score:
           type: integer
           description: Оценка продукта

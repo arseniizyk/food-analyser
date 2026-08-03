@@ -12,72 +12,6 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-// Defines values for AnalyzeProduct200JSONResponseBodyGrade.
-const (
-	AnalyzeProduct200JSONResponseBodyGradeAverage   AnalyzeProduct200JSONResponseBodyGrade = "average"
-	AnalyzeProduct200JSONResponseBodyGradeExcellent AnalyzeProduct200JSONResponseBodyGrade = "excellent"
-	AnalyzeProduct200JSONResponseBodyGradeGood      AnalyzeProduct200JSONResponseBodyGrade = "good"
-	AnalyzeProduct200JSONResponseBodyGradePoor      AnalyzeProduct200JSONResponseBodyGrade = "poor"
-)
-
-// Valid indicates whether the value is a known member of the AnalyzeProduct200JSONResponseBodyGrade enum.
-func (e AnalyzeProduct200JSONResponseBodyGrade) Valid() bool {
-	switch e {
-	case AnalyzeProduct200JSONResponseBodyGradeAverage:
-		return true
-	case AnalyzeProduct200JSONResponseBodyGradeExcellent:
-		return true
-	case AnalyzeProduct200JSONResponseBodyGradeGood:
-		return true
-	case AnalyzeProduct200JSONResponseBodyGradePoor:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for AnalyzeProduct200JSONResponseBodyIngredientsRisk.
-const (
-	AnalyzeProduct200JSONResponseBodyIngredientsRiskCaution   AnalyzeProduct200JSONResponseBodyIngredientsRisk = "caution"
-	AnalyzeProduct200JSONResponseBodyIngredientsRiskDangerous AnalyzeProduct200JSONResponseBodyIngredientsRisk = "dangerous"
-	AnalyzeProduct200JSONResponseBodyIngredientsRiskSafe      AnalyzeProduct200JSONResponseBodyIngredientsRisk = "safe"
-)
-
-// Valid indicates whether the value is a known member of the AnalyzeProduct200JSONResponseBodyIngredientsRisk enum.
-func (e AnalyzeProduct200JSONResponseBodyIngredientsRisk) Valid() bool {
-	switch e {
-	case AnalyzeProduct200JSONResponseBodyIngredientsRiskCaution:
-		return true
-	case AnalyzeProduct200JSONResponseBodyIngredientsRiskDangerous:
-		return true
-	case AnalyzeProduct200JSONResponseBodyIngredientsRiskSafe:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for AnalyzeProduct200JSONResponseBodyRisksSeverity.
-const (
-	AnalyzeProduct200JSONResponseBodyRisksSeverityHigh   AnalyzeProduct200JSONResponseBodyRisksSeverity = "high"
-	AnalyzeProduct200JSONResponseBodyRisksSeverityLow    AnalyzeProduct200JSONResponseBodyRisksSeverity = "low"
-	AnalyzeProduct200JSONResponseBodyRisksSeverityMedium AnalyzeProduct200JSONResponseBodyRisksSeverity = "medium"
-)
-
-// Valid indicates whether the value is a known member of the AnalyzeProduct200JSONResponseBodyRisksSeverity enum.
-func (e AnalyzeProduct200JSONResponseBodyRisksSeverity) Valid() bool {
-	switch e {
-	case AnalyzeProduct200JSONResponseBodyRisksSeverityHigh:
-		return true
-	case AnalyzeProduct200JSONResponseBodyRisksSeverityLow:
-		return true
-	case AnalyzeProduct200JSONResponseBodyRisksSeverityMedium:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for GetAnalysisByBarcode200JSONResponseBodyGrade.
 const (
 	GetAnalysisByBarcode200JSONResponseBodyGradeAverage   GetAnalysisByBarcode200JSONResponseBodyGrade = "average"
@@ -144,26 +78,70 @@ func (e GetAnalysisByBarcode200JSONResponseBodyRisksSeverity) Valid() bool {
 	}
 }
 
-// AnalyzeProductMultipartBody defines parameters for AnalyzeProduct.
-type AnalyzeProductMultipartBody struct {
-	Image openapi_types.File `json:"image"`
+// Defines values for Analyze200JSONResponseBodyGrade.
+const (
+	Analyze200JSONResponseBodyGradeAverage   Analyze200JSONResponseBodyGrade = "average"
+	Analyze200JSONResponseBodyGradeExcellent Analyze200JSONResponseBodyGrade = "excellent"
+	Analyze200JSONResponseBodyGradeGood      Analyze200JSONResponseBodyGrade = "good"
+	Analyze200JSONResponseBodyGradePoor      Analyze200JSONResponseBodyGrade = "poor"
+)
 
-	// UserId Optional user ID (if authenticated). If not provided, analysis is stored only locally on client.
-	UserId *string `json:"user_id,omitempty"`
+// Valid indicates whether the value is a known member of the Analyze200JSONResponseBodyGrade enum.
+func (e Analyze200JSONResponseBodyGrade) Valid() bool {
+	switch e {
+	case Analyze200JSONResponseBodyGradeAverage:
+		return true
+	case Analyze200JSONResponseBodyGradeExcellent:
+		return true
+	case Analyze200JSONResponseBodyGradeGood:
+		return true
+	case Analyze200JSONResponseBodyGradePoor:
+		return true
+	default:
+		return false
+	}
 }
 
-// AnalyzeProduct200JSONResponseBodyGrade defines parameters for AnalyzeProduct.
-type AnalyzeProduct200JSONResponseBodyGrade string
+// Defines values for Analyze200JSONResponseBodyIngredientsRisk.
+const (
+	Analyze200JSONResponseBodyIngredientsRiskCaution   Analyze200JSONResponseBodyIngredientsRisk = "caution"
+	Analyze200JSONResponseBodyIngredientsRiskDangerous Analyze200JSONResponseBodyIngredientsRisk = "dangerous"
+	Analyze200JSONResponseBodyIngredientsRiskSafe      Analyze200JSONResponseBodyIngredientsRisk = "safe"
+)
 
-// AnalyzeProduct200JSONResponseBodyIngredientsRisk defines parameters for AnalyzeProduct.
-type AnalyzeProduct200JSONResponseBodyIngredientsRisk string
+// Valid indicates whether the value is a known member of the Analyze200JSONResponseBodyIngredientsRisk enum.
+func (e Analyze200JSONResponseBodyIngredientsRisk) Valid() bool {
+	switch e {
+	case Analyze200JSONResponseBodyIngredientsRiskCaution:
+		return true
+	case Analyze200JSONResponseBodyIngredientsRiskDangerous:
+		return true
+	case Analyze200JSONResponseBodyIngredientsRiskSafe:
+		return true
+	default:
+		return false
+	}
+}
 
-// AnalyzeProduct200JSONResponseBodyRisksSeverity defines parameters for AnalyzeProduct.
-type AnalyzeProduct200JSONResponseBodyRisksSeverity string
+// Defines values for Analyze200JSONResponseBodyRisksSeverity.
+const (
+	Analyze200JSONResponseBodyRisksSeverityHigh   Analyze200JSONResponseBodyRisksSeverity = "high"
+	Analyze200JSONResponseBodyRisksSeverityLow    Analyze200JSONResponseBodyRisksSeverity = "low"
+	Analyze200JSONResponseBodyRisksSeverityMedium Analyze200JSONResponseBodyRisksSeverity = "medium"
+)
 
-// AuthenticateWithGoogleJSONBody defines parameters for AuthenticateWithGoogle.
-type AuthenticateWithGoogleJSONBody struct {
-	IdToken string `json:"id_token"`
+// Valid indicates whether the value is a known member of the Analyze200JSONResponseBodyRisksSeverity enum.
+func (e Analyze200JSONResponseBodyRisksSeverity) Valid() bool {
+	switch e {
+	case Analyze200JSONResponseBodyRisksSeverityHigh:
+		return true
+	case Analyze200JSONResponseBodyRisksSeverityLow:
+		return true
+	case Analyze200JSONResponseBodyRisksSeverityMedium:
+		return true
+	default:
+		return false
+	}
 }
 
 // GetAnalysisByBarcode200JSONResponseBodyGrade defines parameters for GetAnalysisByBarcode.
@@ -175,35 +153,63 @@ type GetAnalysisByBarcode200JSONResponseBodyIngredientsRisk string
 // GetAnalysisByBarcode200JSONResponseBodyRisksSeverity defines parameters for GetAnalysisByBarcode.
 type GetAnalysisByBarcode200JSONResponseBodyRisksSeverity string
 
-// AnalyzeProductMultipartRequestBody defines body for AnalyzeProduct for multipart/form-data ContentType.
-type AnalyzeProductMultipartRequestBody AnalyzeProductMultipartBody
+// AnalyzeMultipartBody defines parameters for Analyze.
+type AnalyzeMultipartBody struct {
+	Image openapi_types.File `json:"image"`
+
+	// UserId Optional user ID (if authenticated). If not provided, analysis is stored only locally on client.
+	UserId *string `json:"user_id,omitempty"`
+}
+
+// Analyze200JSONResponseBodyGrade defines parameters for Analyze.
+type Analyze200JSONResponseBodyGrade string
+
+// Analyze200JSONResponseBodyIngredientsRisk defines parameters for Analyze.
+type Analyze200JSONResponseBodyIngredientsRisk string
+
+// Analyze200JSONResponseBodyRisksSeverity defines parameters for Analyze.
+type Analyze200JSONResponseBodyRisksSeverity string
+
+// AuthenticateWithGoogleJSONBody defines parameters for AuthenticateWithGoogle.
+type AuthenticateWithGoogleJSONBody struct {
+	IdToken string `json:"id_token"`
+}
+
+// AnalyzeMultipartRequestBody defines body for Analyze for multipart/form-data ContentType.
+type AnalyzeMultipartRequestBody AnalyzeMultipartBody
 
 // AuthenticateWithGoogleJSONRequestBody defines body for AuthenticateWithGoogle for application/json ContentType.
 type AuthenticateWithGoogleJSONRequestBody AuthenticateWithGoogleJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Analyze product nutrition photo
+	// Get analysis by barcode
+	// (GET /api/v1/analysis/{barcode})
+	GetAnalysisByBarcode(w http.ResponseWriter, r *http.Request, barcode string)
+	// Analyze analysis nutrition photo
 	// (POST /api/v1/analyze/{barcode})
-	AnalyzeProduct(w http.ResponseWriter, r *http.Request, barcode string)
+	Analyze(w http.ResponseWriter, r *http.Request, barcode string)
 	// Authenticate with Google
 	// (POST /api/v1/auth/google)
 	AuthenticateWithGoogle(w http.ResponseWriter, r *http.Request)
 	// Healthcheck
 	// (GET /api/v1/health)
 	Health(w http.ResponseWriter, r *http.Request)
-	// Get analysis for a product
-	// (GET /api/v1/product/{barcode})
-	GetAnalysisByBarcode(w http.ResponseWriter, r *http.Request, barcode string)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
 
-// Analyze product nutrition photo
+// Get analysis by barcode
+// (GET /api/v1/analysis/{barcode})
+func (_ Unimplemented) GetAnalysisByBarcode(w http.ResponseWriter, r *http.Request, barcode string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Analyze analysis nutrition photo
 // (POST /api/v1/analyze/{barcode})
-func (_ Unimplemented) AnalyzeProduct(w http.ResponseWriter, r *http.Request, barcode string) {
+func (_ Unimplemented) Analyze(w http.ResponseWriter, r *http.Request, barcode string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -219,12 +225,6 @@ func (_ Unimplemented) Health(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Get analysis for a product
-// (GET /api/v1/product/{barcode})
-func (_ Unimplemented) GetAnalysisByBarcode(w http.ResponseWriter, r *http.Request, barcode string) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler            ServerInterface
@@ -234,8 +234,8 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// AnalyzeProduct operation middleware
-func (siw *ServerInterfaceWrapper) AnalyzeProduct(w http.ResponseWriter, r *http.Request) {
+// GetAnalysisByBarcode operation middleware
+func (siw *ServerInterfaceWrapper) GetAnalysisByBarcode(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 	_ = err
@@ -250,7 +250,33 @@ func (siw *ServerInterfaceWrapper) AnalyzeProduct(w http.ResponseWriter, r *http
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.AnalyzeProduct(w, r, barcode)
+		siw.Handler.GetAnalysisByBarcode(w, r, barcode)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// Analyze operation middleware
+func (siw *ServerInterfaceWrapper) Analyze(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "barcode" -------------
+	var barcode string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "barcode", chi.URLParam(r, "barcode"), &barcode, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "barcode", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Analyze(w, r, barcode)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -279,32 +305,6 @@ func (siw *ServerInterfaceWrapper) Health(w http.ResponseWriter, r *http.Request
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.Health(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GetAnalysisByBarcode operation middleware
-func (siw *ServerInterfaceWrapper) GetAnalysisByBarcode(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "barcode" -------------
-	var barcode string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "barcode", chi.URLParam(r, "barcode"), &barcode, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "barcode", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetAnalysisByBarcode(w, r, barcode)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -428,16 +428,16 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/api/v1/analyze/{barcode}", wrapper.AnalyzeProduct)
+		r.Get(options.BaseURL+"/api/v1/analysis/{barcode}", wrapper.GetAnalysisByBarcode)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/analyze/{barcode}", wrapper.Analyze)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/auth/google", wrapper.AuthenticateWithGoogle)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/health", wrapper.Health)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/api/v1/product/{barcode}", wrapper.GetAnalysisByBarcode)
 	})
 
 	return r

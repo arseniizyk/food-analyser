@@ -2,8 +2,8 @@ parameters:
   - $ref: ../params/barcode.yaml
 
 post:
-  summary: Analyze product nutrition photo
-  operationId: AnalyzeProduct
+  summary: Analyze analysis nutrition photo
+  operationId: Analyze
   tags:
     - Product, Analysis
   requestBody:

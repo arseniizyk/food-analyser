@@ -1,8 +1,16 @@
 openapi: 3.0.3
+servers:
+  - url: http://localhost:8000
+    description: Local Development
+  - url: http://food_backend:8000
+    description: Inside the docker container
+security: []
 info:
   title: Backend API
   version: 1.0.0
   description: Backend для работы анализатора продуктов
+  license:
+    name: MIT
 
 tags:
   - name: Backend
@@ -12,11 +20,11 @@ paths:
   /api/v1/health:
     $ref: ./paths/healthcheck.yaml
 
-  /api/v1/product/{barcode}:
-    $ref: ./paths/product_by_barcode.yaml
+  /api/v1/analysis/{barcode}:
+    $ref: ./paths/analysis_by_barcode.yaml
 
   /api/v1/analyze/{barcode}:
-    $ref: ./paths/analyze_product.yaml
+    $ref: ./paths/analyze.yaml
 
   /api/v1/auth/google:
     $ref: ./paths/auth_google.yaml

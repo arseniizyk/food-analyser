@@ -3,4 +3,8 @@ get:
   operationId: health
   responses:
     200:
-      description: Service healthy
+      description: Service is healthy
+    "400":
+      description: Bad request
+    "503":
+      description: Service is unhealthy

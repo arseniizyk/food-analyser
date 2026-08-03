@@ -2,8 +2,8 @@ package handler
 
 import "net/http"
 
-type ProductHandler interface {
-	AnalyzeProduct(w http.ResponseWriter, r *http.Request, barcode string)
+type AnalysisHandler interface {
+	Analyze(w http.ResponseWriter, r *http.Request, barcode string)
 	GetAnalysisByBarcode(w http.ResponseWriter, r *http.Request, barcode string)
 }
 
@@ -12,13 +12,13 @@ type AuthHandler interface {
 }
 
 type Handler struct {
-	ProductHandler
+	AnalysisHandler
 	AuthHandler
 }
 
-func NewHandler(authHandler AuthHandler, productHandler ProductHandler) *Handler {
+func NewHandler(authHandler AuthHandler, productHandler AnalysisHandler) *Handler {
 	return &Handler{
-		ProductHandler: productHandler,
-		AuthHandler:    authHandler,
+		AnalysisHandler: productHandler,
+		AuthHandler:     authHandler,
 	}
 }

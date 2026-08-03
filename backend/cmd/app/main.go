@@ -18,15 +18,15 @@ import (
 
 	"github.com/arseniizyk/food-analyser/backend/internal/config"
 	handler "github.com/arseniizyk/food-analyser/backend/internal/handler"
+	analysisHandler "github.com/arseniizyk/food-analyser/backend/internal/handler/analysis"
 	authHandler "github.com/arseniizyk/food-analyser/backend/internal/handler/auth"
 	"github.com/arseniizyk/food-analyser/backend/internal/handler/middlewares"
-	productHandler "github.com/arseniizyk/food-analyser/backend/internal/handler/product"
-	productRepository "github.com/arseniizyk/food-analyser/backend/internal/repository/product"
+	analysisRepository "github.com/arseniizyk/food-analyser/backend/internal/repository/analysis"
 	userRepository "github.com/arseniizyk/food-analyser/backend/internal/repository/user"
+	analysisService "github.com/arseniizyk/food-analyser/backend/internal/service/analysis"
 	authService "github.com/arseniizyk/food-analyser/backend/internal/service/auth"
 	llmService "github.com/arseniizyk/food-analyser/backend/internal/service/llm"
 	mlService "github.com/arseniizyk/food-analyser/backend/internal/service/ml"
-	productService "github.com/arseniizyk/food-analyser/backend/internal/service/product"
 	userService "github.com/arseniizyk/food-analyser/backend/internal/service/user"
 	apiv1 "github.com/arseniizyk/food-analyser/backend/pkg/openapi/backend/v1"
 )
@@ -59,6 +59,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second) // Задержка может быть больше при первом запуске ML
 	defer cancel()
+
 	mlSvc, err := mlService.New(ctx, cfg.MLConfig)
 	if err != nil {
 		panic(fmt.Sprintf("error connecting ml service: %v", err))
@@ -66,18 +67,18 @@ func main() {
 
 	llmSvc := llmService.New(logger, cfg.LLMConfig)
 
-	productRepo := productRepository.New(pool)
-	productSvc := productService.New(productRepo, mlSvc, llmSvc)
+	analysisRepo := analysisRepository.New(pool)
+	analysisSvc := analysisService.New(logger, analysisRepo, mlSvc, llmSvc)
 
 	userRepo := userRepository.New(pool)
-	userSvc := userService.New(userRepo)
+	userSvc := userService.New(logger, userRepo)
 
-	productH := productHandler.New(productSvc, userSvc)
+	analysisH := analysisHandler.New(analysisSvc, userSvc)
 
-	authSvc := authService.New(cfg.Google.ClientID, userRepo)
+	authSvc := authService.New(logger, cfg.Google.ClientID, userRepo)
 	authH := authHandler.New(authSvc)
 
-	h := handler.NewHandler(authH, productH)
+	h := handler.NewHandler(authH, analysisH)
 
 	apiv1.HandlerFromMux(h, r)
 	server := http.Server{
