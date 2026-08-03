@@ -12,7 +12,7 @@ import (
 type Repository interface {
 	GetByGoogleID(ctx context.Context, googleID string) (*models.User, error)
 	CreateIfNotExists(ctx context.Context, googleID string) (*models.User, error)
-	AddScan(ctx context.Context, userID string, barcode string) error
+	AddScan(ctx context.Context, userID, barcode string) error
 	GetScans(ctx context.Context, userID string) ([]string, error)
 }
 
@@ -36,14 +36,14 @@ func (s *Service) GetByGoogleID(ctx context.Context, googleID string) (*models.U
 }
 
 func (s *Service) CreateIfNotExists(ctx context.Context, googleID string) (*models.User, error) {
-	user, err := s.CreateIfNotExists(ctx, googleID)
+	user, err := s.repository.CreateIfNotExists(ctx, googleID)
 	if err != nil {
 		return nil, fmt.Errorf("create if not exists: %w", err)
 	}
 	return user, nil
 }
 
-func (s *Service) AddScan(ctx context.Context, userID string, barcode string) error {
+func (s *Service) AddScan(ctx context.Context, userID, barcode string) error {
 	if err := s.repository.AddScan(ctx, userID, barcode); err != nil {
 		return fmt.Errorf("add scan: %w", err)
 	}
