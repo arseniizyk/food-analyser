@@ -48,16 +48,22 @@ jobs:
 
       - name: Check import ordering (gci)
         run: |
-          go install github.com/daixiang0/gci@v0.14.0
+          go install github.com/daixiang0/gci@v0.14.1
           export PATH="$(go env GOPATH)/bin:$PATH"
       
           gci --version
-          which gci
       
           gci diff . \
             -s standard \
             -s default \
-            -s "prefix(github.com/arseniizyk/food-analyser/backend)"
+            -s "prefix(github.com/arseniizyk/food-analyser/backend)" \
+            > gci.diff
+      
+          if [ -s gci.diff ]; then
+            echo "::error::Imports not ordered with gci:"
+            cat gci.diff
+            exit 1
+          fi
         working-directory: backend
 
       - name: Run golangci-lint
