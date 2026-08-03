@@ -64,7 +64,7 @@ func main() {
 		panic(fmt.Sprintf("error connecting ml service: %v", err))
 	}
 
-	llmSvc := llmService.New(cfg.LLMConfig)
+	llmSvc := llmService.New(logger, cfg.LLMConfig)
 
 	productRepo := productRepository.New(pool)
 	productSvc := productService.New(productRepo, mlSvc, llmSvc)

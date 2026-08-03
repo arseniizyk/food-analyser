@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/invopop/jsonschema"
@@ -22,28 +23,28 @@ var analysisSchema = func() any {
 type Service struct {
 	cfg    *config.LLMConfig
 	client *http.Client
+	logger *slog.Logger
 }
 
-// TODO: add logger
-func New(cfg config.LLMConfig) *Service {
+func New(logger *slog.Logger, cfg config.LLMConfig) *Service {
 	return &Service{
 		cfg:    &cfg,
 		client: &http.Client{},
+		logger: logger,
 	}
 }
 
 func (s *Service) AnalyzeNutrition(ctx context.Context, nutrition string) (*models.Analysis, error) {
+	l := s.logger.With(
+		"operation", "AnalyzeNutrition",
+		"nutrition_len", len(nutrition),
+	)
+
 	request := &request{
 		Model: s.cfg.Model,
 		Messages: []Message{
-			{
-				Role:    "system",
-				Content: systemPrompt,
-			},
-			{
-				Role:    "user",
-				Content: nutrition,
-			},
+			{Role: "system", Content: systemPrompt},
+			{Role: "user", Content: nutrition},
 		},
 		ResponseFormat: &ResponseFormat{
 			Type: "json_schema",
@@ -57,32 +58,38 @@ func (s *Service) AnalyzeNutrition(ctx context.Context, nutrition string) (*mode
 
 	body, err := json.Marshal(request)
 	if err != nil {
+		l.Error("failed to marshal analysis request", "error", err)
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
 	var analysis *AnalysisResponse
+	var lastErr error
 
-	// TODO: add logs
-	for attempt := 0; attempt < 3; attempt++ {
+	const maxAttempts = 5
+	for attempt := 0; attempt < 5; attempt++ {
 		req, err := http.NewRequestWithContext(ctx, "POST", s.cfg.URL, bytes.NewReader(body))
 		if err != nil {
+			l.Error("failed to create analysis request", "error", err)
 			return nil, fmt.Errorf("failed to create request: %w", err)
 		}
 
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+s.cfg.APIKey)
 
-		analysis, err = s.doRequest(req)
-		if err == nil {
-			break
+		analysis, lastErr = s.doRequest(req)
+		if lastErr == nil {
+			l.Debug("successfully analyzed nutrition", "attempt", attempt)
+			return analysisToModel(analysis), nil
 		}
+		l.Warn("attempt failed",
+			"attempt", attempt,
+			"max_attempts", maxAttempts,
+			"error", lastErr,
+		)
 	}
 
-	if analysis == nil {
-		return nil, fmt.Errorf("failed after 3 attempts")
-	}
-
-	return analysisToModel(analysis), nil
+	l.Error("all attempts failed to analyze nutrition", slog.Any("error", lastErr))
+	return nil, fmt.Errorf("failed after %d attempts: %w", maxAttempts, lastErr)
 }
 
 func (s *Service) doRequest(req *http.Request) (*AnalysisResponse, error) {
