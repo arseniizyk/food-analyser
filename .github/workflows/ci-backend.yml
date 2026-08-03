@@ -36,7 +36,7 @@ jobs:
             go install mvdan.cc/gofumpt@v0.9.2
             export PATH="$(go env GOPATH)/bin:$PATH"
             
-            DIFF=$(gofumpt -l ./...)
+            DIFF=$(gofumpt -l .)
             if [ -n "$DIFF" ]; then
               echo "::error::Files not formatted with gofumpt:"
               echo "$DIFF"
