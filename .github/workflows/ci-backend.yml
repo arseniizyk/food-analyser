@@ -48,7 +48,7 @@ jobs:
 
       - name: Check import ordering (gci)
         run: |
-          go install github.com/daixiang0/gci@v0.14.1
+          go install github.com/daixiang0/gci@v0.14.0
           export PATH="$(go env GOPATH)/bin:$PATH"
       
           gci --version
