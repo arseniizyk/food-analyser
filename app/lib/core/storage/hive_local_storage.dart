@@ -13,6 +13,10 @@ class HiveLocalStorage implements LocalStorage {
     return HiveLocalStorage._();
   }
 
+  Future<void> warmUp() async {
+    await Future.wait([_productsBoxReady(), _analysesBoxReady()]);
+  }
+
   Future<Box<dynamic>> _productsBoxReady() async {
     await HiveBootstrap.ensureInitialized();
     return _productsBox ??= await Hive.openBox<dynamic>('products');

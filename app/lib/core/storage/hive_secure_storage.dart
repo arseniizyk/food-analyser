@@ -12,6 +12,10 @@ class HiveSecureStorage implements SecureStorage {
     return HiveSecureStorage._();
   }
 
+  Future<void> warmUp() async {
+    await _boxReady();
+  }
+
   Future<Box<dynamic>> _boxReady() async {
     await HiveBootstrap.ensureInitialized();
     return _box ??= await Hive.openBox<dynamic>('auth');

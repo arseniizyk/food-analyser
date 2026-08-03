@@ -6,7 +6,6 @@ class ApiError implements Exception {
 
   @override
   String toString() {
-    final code = statusCode == null ? '' : ' [$statusCode]';
-    return '$message$code';
+    return message;
   }
 }

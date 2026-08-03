@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 
+import 'api_error.dart';
 import '../storage/secure_storage.dart';
 
 abstract interface class ApiClient {
@@ -74,10 +75,7 @@ class FakeApiClient implements ApiClient {
 
 /// Real HTTP API client that communicates with backend services.
 class HttpApiClient implements ApiClient {
-  HttpApiClient({
-    required this.baseUrl,
-    required this._secureStorage,
-  });
+  HttpApiClient({required this.baseUrl, required this._secureStorage});
 
   final String baseUrl;
   final SecureStorage _secureStorage;
@@ -89,6 +87,31 @@ class HttpApiClient implements ApiClient {
       headers['Authorization'] = 'Bearer $token';
     }
     return headers;
+  }
+
+  String _messageFromResponseBody(String body, String fallbackMessage) {
+    if (body.isEmpty) return fallbackMessage;
+
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, Object?>) {
+        final message = decoded['message'];
+        if (message is String && message.trim().isNotEmpty) {
+          return message;
+        }
+      }
+    } catch (_) {
+      // Fall back to the provided generic message.
+    }
+
+    return fallbackMessage;
+  }
+
+  Never _throwApiError(int? statusCode, String body, String fallbackMessage) {
+    throw ApiError(
+      _messageFromResponseBody(body, fallbackMessage),
+      statusCode: statusCode,
+    );
   }
 
   @override
@@ -104,12 +127,19 @@ class HttpApiClient implements ApiClient {
         return null;
       }
       if (response.statusCode != 200) {
-        throw Exception('Failed to get product: ${response.statusCode}');
+        final body = response.body;
+        _throwApiError(
+          response.statusCode,
+          body,
+          'Не удалось получить данные продукта',
+        );
       }
 
       return jsonDecode(response.body) as Map<String, Object?>?;
+    } on ApiError {
+      rethrow;
     } catch (e) {
-      throw Exception('Error getting product by barcode: $e');
+      throw ApiError('Не удалось получить данные продукта');
     }
   }
 
@@ -139,13 +169,40 @@ class HttpApiClient implements ApiClient {
 
       if (response.statusCode != 200) {
         final body = await response.stream.bytesToString();
-        throw Exception('Analyze request failed: ${response.statusCode} $body');
+        switch (response.statusCode) {
+          case 400:
+            _throwApiError(
+              response.statusCode,
+              body,
+              'Ошибка распознавания текста',
+            );
+          case 502:
+            _throwApiError(
+              response.statusCode,
+              body,
+              'Сервис распознавания временно недоступен',
+            );
+          case 500:
+            _throwApiError(
+              response.statusCode,
+              body,
+              'Внутренняя ошибка сервера',
+            );
+          default:
+            _throwApiError(
+              response.statusCode,
+              body,
+              'Не удалось распознать текст',
+            );
+        }
       }
 
       final responseBody = await response.stream.bytesToString();
       return jsonDecode(responseBody) as Map<String, Object?>;
+    } on ApiError {
+      rethrow;
     } catch (e) {
-      throw Exception('Error analyzing product: $e');
+      throw ApiError('Не удалось распознать текст');
     }
   }
 
@@ -162,12 +219,18 @@ class HttpApiClient implements ApiClient {
         return null;
       }
       if (response.statusCode != 200) {
-        throw Exception('Failed to get analysis: ${response.statusCode}');
+        _throwApiError(
+          response.statusCode,
+          response.body,
+          'Не удалось получить результат анализа',
+        );
       }
 
       return jsonDecode(response.body) as Map<String, Object?>?;
+    } on ApiError {
+      rethrow;
     } catch (e) {
-      throw Exception('Error getting analysis: $e');
+      throw ApiError('Не удалось получить результат анализа');
     }
   }
 }
