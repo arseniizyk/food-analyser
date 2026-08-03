@@ -33,17 +33,19 @@ jobs:
 
       - name: Check formatting (gofumpt)
         run: |
-            go install mvdan.cc/gofumpt@v0.9.2
-            export PATH="$(go env GOPATH)/bin:$PATH"
-            
-            DIFF=$(gofumpt -l .)
-            if [ -n "$DIFF" ]; then
-              echo "::error::Files not formatted with gofumpt:"
-              echo "$DIFF"
-              echo ""
-              echo "Run: gofumpt -w ."
-              exit 1
-            fi
+          go install mvdan.cc/gofumpt@v0.9.2
+          export PATH="$(go env GOPATH)/bin:$PATH"
+      
+          FILES=$(git ls-files '*.go')
+          DIFF=$(echo "$FILES" | xargs gofumpt -l)
+      
+          if [ -n "$DIFF" ]; then
+            echo "::error::Files not formatted with gofumpt:"
+            echo "$DIFF"
+            echo ""
+            echo "Run: git ls-files '*.go' | xargs gofumpt -w"
+            exit 1
+          fi
         working-directory: backend
 
       - name: Check import ordering (gci)
