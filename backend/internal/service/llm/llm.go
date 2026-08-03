@@ -8,9 +8,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/invopop/jsonschema"
+
 	"github.com/arseniizyk/food-analyser/backend/internal/config"
 	"github.com/arseniizyk/food-analyser/backend/internal/models"
-	"github.com/invopop/jsonschema"
 )
 
 var analysisSchema = func() any {
@@ -100,7 +101,7 @@ func (s *Service) doRequest(req *http.Request) (*AnalysisResponse, error) {
 	var apiResponse response
 
 	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode LLM api response: %w", err)
 	}
 
 	if len(apiResponse.Choices) == 0 {
@@ -113,7 +114,7 @@ func (s *Service) doRequest(req *http.Request) (*AnalysisResponse, error) {
 		[]byte(apiResponse.Choices[0].Message.Content),
 		&analysis,
 	); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode analysis response from LLM response: %w", err)
 	}
 
 	return &analysis, nil

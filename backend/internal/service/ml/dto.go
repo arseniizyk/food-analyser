@@ -1,4 +1,4 @@
-package models
+package ml
 
 type OCRResponse struct {
 	Text       string  `json:"text"`

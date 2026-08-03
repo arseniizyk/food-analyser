@@ -57,7 +57,7 @@ func (r *Repository) CreateIfNotExists(ctx context.Context, googleID string) (*m
 	return &models.User{ID: id, GoogleID: googleID, CreatedAt: now}, nil
 }
 
-func (r *Repository) AddScan(ctx context.Context, userID string, barcode string) error {
+func (r *Repository) AddScan(ctx context.Context, userID, barcode string) error {
 	query, args, err := r.sb.Insert("user_scans").Columns("user_id", "barcode", "created_at").Values(userID, barcode, time.Now().UTC()).ToSql()
 	if err != nil {
 		return fmt.Errorf("build insert scan: %w", err)

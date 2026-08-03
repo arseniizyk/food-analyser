@@ -18,7 +18,7 @@ type Service interface {
 }
 
 type UserService interface {
-	AddScan(ctx context.Context, userID string, barcode string) error
+	AddScan(ctx context.Context, userID, barcode string) error
 }
 
 type Handler struct {

@@ -10,7 +10,6 @@ import (
 	"net/http"
 
 	"github.com/arseniizyk/food-analyser/backend/internal/config"
-	"github.com/arseniizyk/food-analyser/backend/internal/models"
 )
 
 type Service struct {
@@ -82,7 +81,7 @@ func (s *Service) GetTextFromPhoto(ctx context.Context, image io.Reader) (string
 		)
 	}
 
-	var res models.OCRResponse
+	var res OCRResponse
 	if err := json.Unmarshal(body, &res); err != nil {
 		return "", fmt.Errorf("ml decoding failed: %w", err)
 	}
