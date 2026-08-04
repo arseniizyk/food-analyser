@@ -1,11 +1,9 @@
 import '../../analysis/domain/analysis.dart';
-import '../../product/domain/product.dart';
 
 class ScanSession {
   const ScanSession({
     required this.id,
     required this.barcode,
-    required this.product,
     required this.ingredientsImagePath,
     required this.extractedText,
     required this.analysis,
@@ -14,7 +12,6 @@ class ScanSession {
 
   final String id;
   final String? barcode;
-  final Product? product;
   final String? ingredientsImagePath;
   final String? extractedText;
   final Analysis? analysis;
@@ -23,7 +20,6 @@ class ScanSession {
   ScanSession copyWith({
     String? id,
     String? barcode,
-    Product? product,
     String? ingredientsImagePath,
     String? extractedText,
     Analysis? analysis,
@@ -32,7 +28,6 @@ class ScanSession {
     return ScanSession(
       id: id ?? this.id,
       barcode: barcode ?? this.barcode,
-      product: product ?? this.product,
       ingredientsImagePath: ingredientsImagePath ?? this.ingredientsImagePath,
       extractedText: extractedText ?? this.extractedText,
       analysis: analysis ?? this.analysis,
@@ -41,14 +36,4 @@ class ScanSession {
   }
 }
 
-enum ScanStep {
-  idle,
-  barcodeScanning,
-  checkingProduct,
-  productFound,
-  productMissing,
-  ingredientsScanning,
-  analyzing,
-  completed,
-  failed,
-}
+enum ScanStep { checkingAnalysis, analysisMissing, completed, failed }

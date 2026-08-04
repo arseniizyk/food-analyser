@@ -16,8 +16,8 @@ class HistoryItemTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = AppColors.scoreColor(analysis.score.value, context);
-    final date = analysis.createdAt.toLocal();
+    final color = AppColors.scoreColor(analysis.score, context);
+    final date = (analysis.createdAt ?? DateTime.now()).toLocal();
     final dateStr = '${date.day}/${date.month}/${date.year}';
 
     return Card(
@@ -43,7 +43,7 @@ class HistoryItemTile extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      analysis.score.value.toString(),
+                      analysis.score.toString(),
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: color,
                         fontWeight: FontWeight.w700,
@@ -67,7 +67,7 @@ class HistoryItemTile extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
-                      AppColors.scoreLabel(analysis.score.value),
+                      AppColors.scoreLabel(analysis.score),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: color,
                         fontWeight: FontWeight.w500,

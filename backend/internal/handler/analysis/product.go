@@ -34,7 +34,7 @@ func New(service Service, userService UserService) *Handler {
 }
 
 func (h *Handler) Analyze(w http.ResponseWriter, r *http.Request, barcode string) {
-	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 1*time.Minute)
 	defer cancel()
 
 	file, _, err := r.FormFile("image")

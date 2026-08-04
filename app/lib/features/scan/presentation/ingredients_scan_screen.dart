@@ -345,7 +345,7 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
       if (session?.step == ScanStep.completed && analysis != null) {
         showAnalysisResultBottomSheet(
           context: context,
-          analysisId: analysis.barcode,
+          barcode: analysis.barcode,
           onScanAnother: () {
             Navigator.of(context).pop();
             ref.read(scanControllerProvider.notifier).reset();

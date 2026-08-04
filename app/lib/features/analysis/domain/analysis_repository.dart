@@ -1,11 +1,11 @@
 import 'analysis.dart';
 
 abstract interface class AnalysisRepository {
-  Future<Analysis> analyzeProduct({
+  Future<Analysis> analyze({
     required String barcode,
     required String imagePath,
     String? userId,
   });
 
-  Future<Analysis?> getById(String analysisId);
+  Future<Analysis?> getByBarcode(String barcode);
 }

@@ -58,7 +58,9 @@ class ScanOverlay extends StatelessWidget {
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w500,
-                          shadows: [Shadow(color: Colors.black54, blurRadius: 8)],
+                          shadows: [
+                            Shadow(color: Colors.black54, blurRadius: 8),
+                          ],
                         ),
                       ),
                     ),
@@ -153,10 +155,9 @@ class _DimmedOverlayPainter extends CustomPainter {
       Path.combine(
         PathOperation.difference,
         Path()..addRect(fullRect),
-        Path()
-          ..addRRect(
-            RRect.fromRectAndRadius(frameRect, const Radius.circular(12)),
-          ),
+        Path()..addRRect(
+          RRect.fromRectAndRadius(frameRect, const Radius.circular(12)),
+        ),
       ),
       paint,
     );

@@ -12,7 +12,7 @@ class FoodAnalyzerApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'FoodCheck',
+      title: 'Foodify',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(),
       routerConfig: router,
@@ -45,38 +45,28 @@ class FoodAnalyzerApp extends ConsumerWidget {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.mdAll,
-          side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          side: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
         ),
         clipBehavior: Clip.antiAlias,
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(48),
-          shape: RoundedRectangleBorder(
-            borderRadius: AppRadius.mdAll,
-          ),
-          textStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(48),
-          shape: RoundedRectangleBorder(
-            borderRadius: AppRadius.mdAll,
-          ),
-          textStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: AppRadius.mdAll,
-        ),
+        border: OutlineInputBorder(borderRadius: AppRadius.mdAll),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppRadius.mdAll,
           borderSide: BorderSide(color: colorScheme.outlineVariant),
@@ -92,23 +82,17 @@ class FoodAnalyzerApp extends ConsumerWidget {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.mdAll,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
         contentTextStyle: const TextStyle(fontSize: 14),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(20),
-          ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         clipBehavior: Clip.antiAlias,
       ),
       chipTheme: ChipThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.smAll,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.smAll),
         side: BorderSide(color: colorScheme.outlineVariant),
         selectedColor: colorScheme.primaryContainer,
         labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
