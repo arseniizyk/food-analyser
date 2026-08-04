@@ -41,7 +41,7 @@ class LoginScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.xxl),
                   Text(
-                    'FoodCheck',
+                    'Foodify',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.w700,

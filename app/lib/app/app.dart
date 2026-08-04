@@ -12,7 +12,7 @@ class FoodAnalyzerApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'FoodCheck',
+      title: 'Foodify',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(),
       routerConfig: router,

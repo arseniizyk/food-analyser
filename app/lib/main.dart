@@ -91,7 +91,7 @@ class _StartupScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: SafeArea(
-        child: Center(child: AppLoadingView(message: 'Starting FoodCheck...')),
+        child: Center(child: AppLoadingView(message: 'Starting Foodify...')),
       ),
     );
   }
