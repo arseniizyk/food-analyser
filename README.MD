@@ -1,11 +1,11 @@
-# 🥗 Food Analyser
+# 🥗 Foodify
 
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![Python Version](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat&logo=python)](https://www.python.org/)
 [![Flutter Version](https://img.shields.io/badge/Flutter-3.12+-02569B?style=flat&logo=flutter)](https://flutter.dev/)
 [![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker)](https://www.docker.com/)
 
-**Food Analyser** is a microservice-based platform for food product analysis. The Flutter app lets users scan barcodes or capture ingredient labels, the Go backend combines product lookup, Google OAuth, OCR orchestration, and LLM-based ingredient analysis, and the Python service handles Russian OCR with PaddleOCR.
+**Foodify** is a microservice-based platform for food product analysis. The Flutter app lets users scan barcodes or capture ingredient labels, the Go backend combines product lookup, Google OAuth, OCR orchestration, and LLM-based ingredient analysis, and the Python service handles Russian OCR with PaddleOCR.
 
 This README is the English guide. The Russian version is available in [README_RU.md](./README_RU.md).
 
