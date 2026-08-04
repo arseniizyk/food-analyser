@@ -48,14 +48,4 @@ class HiveLocalStorage implements LocalStorage {
           });
     return items;
   }
-
-  @override
-  Future<Map<String, Object?>?> getAnalysisByBarcode(String barcode) async {
-    final analysesBox = await _analysesBoxReady();
-    final raw = analysesBox.get(barcode);
-    if (raw is Map) {
-      return raw.cast<String, Object?>();
-    }
-    return null;
-  }
 }

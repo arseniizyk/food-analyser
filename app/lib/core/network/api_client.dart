@@ -125,7 +125,7 @@ class HttpApiClient implements ApiClient {
   @override
   Future<Map<String, Object?>?> getAnalysisByBarcode(String barcode) async {
     try {
-      final uri = Uri.parse('$baseUrl/api/v1/product/$barcode');
+      final uri = Uri.parse('$baseUrl/api/v1/analysis/$barcode');
       final headers = await _authHeaders();
       final response = await http
           .get(uri, headers: headers)

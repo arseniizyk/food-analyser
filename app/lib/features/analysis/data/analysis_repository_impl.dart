@@ -57,7 +57,9 @@ class LocalAnalysisRepository implements AnalysisRepository {
 
   @override
   Future<Analysis?> getByBarcode(String barcode) async {
-    final json = await _localStorage.getAnalysisByBarcode(barcode);
-    return json == null ? null : AnalysisDto.fromJson(json);
+    final json = await _apiClient.getAnalysisByBarcode(barcode);
+    if (json == null) return null;
+    await _localStorage.saveAnalysis(json);
+    return AnalysisDto.fromJson(json);
   }
 }

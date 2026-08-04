@@ -3,15 +3,35 @@ info:
   title: Backend API
   version: 1.0.0
   description: Backend для работы анализатора продуктов
+  license:
+    url: https://github.com/arseniizyk/food-analyser/blob/07936fac66da411a4cb4464d4cb4e53e7f857cec/LICENSE
+    name: MIT
+servers:
+  - url: http://0.0.0.0:8000
+    description: Local Development
+  - url: http://food_backend:8000
+    description: Inside the docker container
+security: []
 tags:
   - name: Backend
     description: операции с данными о продуктах и юзерах
 paths:
-  /api/v1/product/{barcode}:
+  /api/v1/health:
+    get:
+      summary: Healthcheck
+      operationId: health
+      responses:
+        '200':
+          description: Service is healthy
+        '400':
+          description: Bad request
+        '503':
+          description: Service is unhealthy
+  /api/v1/analysis/{barcode}:
     parameters:
       - $ref: '#/components/parameters/barcode'
     get:
-      summary: Get analysis for a analysis
+      summary: Get analysis by barcode
       operationId: GetAnalysisByBarcode
       tags:
         - Barcode, Analysis
@@ -51,7 +71,7 @@ paths:
       - $ref: '#/components/parameters/barcode'
     post:
       summary: Analyze analysis nutrition photo
-      operationId: AnalyzeProduct
+      operationId: Analyze
       tags:
         - Product, Analysis
       requestBody:
@@ -66,6 +86,9 @@ paths:
                 image:
                   type: string
                   format: binary
+                user_id:
+                  type: string
+                  description: Optional user ID (if authenticated). If not provided, analysis is stored only locally on client.
       responses:
         '200':
           description: Analyze has competed successfully
@@ -85,6 +108,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/internal_server_error'
+        '502':
+          description: LLM Service isn't responding
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bad_gateway_error'
         default:
           description: Unexpected error
           content:
@@ -139,12 +168,8 @@ components:
     summary_item:
       type: object
       required:
-        - code
         - message
       properties:
-        code:
-          type: string
-          example: balanced_composition
         message:
           type: string
           example: Composition looks balanced.
@@ -188,16 +213,16 @@ components:
     analysis:
       type: object
       required:
-        - id
+        - barcode
         - score
         - grade
         - summary
         - risks
         - ingredients
       properties:
-        id:
+        barcode:
           type: string
-          example: analysis-45454545
+          example: '978020137962'
         score:
           type: integer
           description: Оценка продукта
@@ -265,6 +290,20 @@ components:
           type: string
           description: Описание ошибки
           example: Internal server error occurred
+    bad_gateway_error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: HTTP-код ошибки
+          example: 502
+        message:
+          type: string
+          description: Описание ошибки
+          example: LLM Service isn't responding
     auth_google_request:
       type: object
       required:
@@ -275,10 +314,8 @@ components:
     auth_response:
       type: object
       required:
-        - access_token
-        - refresh_token
+        - user_id
       properties:
-        access_token:
+        user_id:
           type: string
-        refresh_token:
-          type: string
+          description: Unique user ID created or retrieved from backend

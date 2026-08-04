@@ -2,8 +2,6 @@ abstract interface class LocalStorage {
   Future<void> saveAnalysis(Map<String, Object?> analysis);
 
   Future<List<Map<String, Object?>>> getHistory(String userId);
-
-  Future<Map<String, Object?>?> getAnalysisByBarcode(String barcode);
 }
 
 class MemoryLocalStorage implements LocalStorage {
@@ -26,10 +24,5 @@ class MemoryLocalStorage implements LocalStorage {
       final bDate = b['createdAt'] as String? ?? '';
       return bDate.compareTo(aDate);
     });
-  }
-
-  @override
-  Future<Map<String, Object?>?> getAnalysisByBarcode(String barcode) async {
-    return _analyses[barcode];
   }
 }
