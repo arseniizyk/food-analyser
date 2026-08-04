@@ -10,12 +10,12 @@ class RemoteAnalysisRepository implements AnalysisRepository {
   final ApiClient _apiClient;
 
   @override
-  Future<Analysis> analyzeProduct({
+  Future<Analysis> analyze({
     required String barcode,
     required String imagePath,
     String? userId,
   }) async {
-    final json = await _apiClient.analyzeProduct(
+    final json = await _apiClient.analyze(
       barcode: barcode,
       imagePath: imagePath,
       userId: userId,
@@ -24,8 +24,8 @@ class RemoteAnalysisRepository implements AnalysisRepository {
   }
 
   @override
-  Future<Analysis?> getById(String analysisId) async {
-    final json = await _apiClient.getAnalysisByBarcode(analysisId);
+  Future<Analysis?> getByBarcode(String barcode) async {
+    final json = await _apiClient.getAnalysisByBarcode(barcode);
     return json == null ? null : AnalysisDto.fromJson(json);
   }
 }
@@ -37,23 +37,27 @@ class LocalAnalysisRepository implements AnalysisRepository {
   final ApiClient _apiClient;
 
   @override
-  Future<Analysis> analyzeProduct({
+  Future<Analysis> analyze({
     required String barcode,
     required String imagePath,
     String? userId,
   }) async {
-    final json = await _apiClient.analyzeProduct(
+    final json = await _apiClient.analyze(
       barcode: barcode,
       imagePath: imagePath,
       userId: userId,
     );
-    await _localStorage.saveAnalysis(json);
-    return AnalysisDto.fromJson(json);
+    final cached = <String, Object?>{
+      ...json,
+      if (userId != null && userId.isNotEmpty) 'userId': userId,
+    };
+    await _localStorage.saveAnalysis(cached);
+    return AnalysisDto.fromJson(cached);
   }
 
   @override
-  Future<Analysis?> getById(String analysisId) async {
-    final json = await _localStorage.getAnalysisById(analysisId);
+  Future<Analysis?> getByBarcode(String barcode) async {
+    final json = await _localStorage.getAnalysisByBarcode(barcode);
     return json == null ? null : AnalysisDto.fromJson(json);
   }
 }

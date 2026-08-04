@@ -15,19 +15,18 @@ class ScanRepositoryImpl implements ScanRepository {
     final session = ScanSession(
       id: 'scan-${DateTime.now().microsecondsSinceEpoch}',
       barcode: barcode,
-      product: null,
       ingredientsImagePath: null,
       extractedText: null,
       analysis: null,
-      step: ScanStep.checkingProduct,
+      step: ScanStep.checkingAnalysis,
     );
 
-    final analysis = await analysisRepository.getById(barcode);
+    final analysis = await analysisRepository.getByBarcode(barcode);
     if (analysis != null) {
       return session.copyWith(analysis: analysis, step: ScanStep.completed);
     }
 
-    return session.copyWith(step: ScanStep.productMissing);
+    return session.copyWith(step: ScanStep.analysisMissing);
   }
 
   @override
@@ -37,7 +36,7 @@ class ScanRepositoryImpl implements ScanRepository {
     required String imagePath,
   }) async {
     final barcode = session.barcode ?? session.id.replaceFirst('scan-', '');
-    final analysis = await analysisRepository.analyzeProduct(
+    final analysis = await analysisRepository.analyze(
       barcode: barcode,
       imagePath: imagePath,
       userId: userId,

@@ -32,18 +32,4 @@ class BarcodeUtils {
       _ => null,
     };
   }
-
-  /// Barcode variants to try when looking up a product in the catalog.
-  static List<String> lookupCandidates(String normalized) {
-    final candidates = <String>{normalized};
-
-    if (normalized.length == 13 && normalized.startsWith('0')) {
-      candidates.add(normalized.substring(1));
-    }
-    if (normalized.length == 12) {
-      candidates.add('0$normalized');
-    }
-
-    return candidates.toList();
-  }
 }

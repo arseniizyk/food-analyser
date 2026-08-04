@@ -49,11 +49,7 @@ class GoogleAuthService {
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
       final userId = data['user_id'] as String? ?? '';
 
-      return AuthorizedUser(
-        id: userId,
-        email: account.email,
-        accessToken: '',
-      );
+      return AuthorizedUser(id: userId, email: account.email, accessToken: '');
     } catch (e) {
       throw Exception('Failed to authenticate with backend: $e');
     }

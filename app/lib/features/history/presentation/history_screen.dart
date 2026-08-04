@@ -100,7 +100,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                         analysis: analysis,
                         onTap: () => showAnalysisResultBottomSheet(
                           context: context,
-                          analysisId: analysis.barcode,
+                          barcode: analysis.barcode,
                           onScanAnother: () {
                             context.go('/app/scan');
                           },
@@ -119,14 +119,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   List<Analysis> _applyFilter(List<Analysis> items) {
     return switch (_filter) {
       _HistoryFilter.all => items,
-      _HistoryFilter.good =>
-        items.where((item) => item.score.value >= 80).toList(),
+      _HistoryFilter.good => items.where((item) => item.score >= 80).toList(),
       _HistoryFilter.moderate =>
-        items
-            .where((item) => item.score.value >= 55 && item.score.value < 80)
-            .toList(),
-      _HistoryFilter.risky =>
-        items.where((item) => item.score.value < 55).toList(),
+        items.where((item) => item.score >= 55 && item.score < 80).toList(),
+      _HistoryFilter.risky => items.where((item) => item.score < 55).toList(),
     };
   }
 }

@@ -56,7 +56,6 @@ class ScanController extends AsyncNotifier<ScanSession?> {
     final session = ScanSession(
       id: 'scan-${DateTime.now().microsecondsSinceEpoch}',
       barcode: barcode,
-      product: null,
       ingredientsImagePath: null,
       extractedText: null,
       analysis: null,

@@ -9,7 +9,7 @@ import 'analysis_controller.dart';
 
 Future<void> showAnalysisResultBottomSheet({
   required BuildContext context,
-  required String analysisId,
+  required String barcode,
   VoidCallback? onScanAnother,
 }) {
   return showModalBottomSheet<void>(
@@ -19,7 +19,7 @@ Future<void> showAnalysisResultBottomSheet({
     showDragHandle: true,
     builder: (context) {
       return AnalysisResultBottomSheet(
-        analysisId: analysisId,
+        barcode: barcode,
         onScanAnother: onScanAnother,
       );
     },
@@ -28,17 +28,17 @@ Future<void> showAnalysisResultBottomSheet({
 
 class AnalysisResultBottomSheet extends ConsumerWidget {
   const AnalysisResultBottomSheet({
-    required this.analysisId,
+    required this.barcode,
     this.onScanAnother,
     super.key,
   });
 
-  final String analysisId;
+  final String barcode;
   final VoidCallback? onScanAnother;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final analysisState = ref.watch(analysisControllerProvider(analysisId));
+    final analysisState = ref.watch(analysisControllerProvider(barcode));
 
     return SizedBox(
       height: MediaQuery.sizeOf(context).height * 0.88,
@@ -66,7 +66,7 @@ class _ResultBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = AppColors.scoreColor(analysis.score.value, context);
+    final color = AppColors.scoreColor(analysis.score, context);
 
     return Column(
       children: [
@@ -116,7 +116,7 @@ class _ResultBody extends StatelessWidget {
               AppSpacing.screenPadding,
             ),
             children: [
-              _ScoreCard(score: analysis.score.value, color: color),
+              _ScoreCard(score: analysis.score, color: color),
               const SizedBox(height: AppSpacing.xl),
               _SectionHeader(title: 'Summary'),
               const SizedBox(height: AppSpacing.sm),
@@ -126,15 +126,11 @@ class _ResultBody extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.check_circle,
-                        size: 18,
-                        color: AppColors.good,
-                      ),
+                      Icon(Icons.check_circle, size: 18, color: AppColors.good),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
-                          item,
+                          item.message,
                           style: theme.textTheme.bodyMedium,
                         ),
                       ),
@@ -149,6 +145,12 @@ class _ResultBody extends StatelessWidget {
                 _NoRisksBanner()
               else
                 ...analysis.risks.map((risk) => _RiskTile(risk: risk)),
+              const SizedBox(height: AppSpacing.lg),
+              _SectionHeader(title: 'Ingredients'),
+              const SizedBox(height: AppSpacing.sm),
+              ...analysis.ingredients.map(
+                (ingredient) => _IngredientTile(ingredient: ingredient),
+              ),
               const SizedBox(height: AppSpacing.xxl),
               FilledButton.icon(
                 onPressed: onScanAnother != null
@@ -250,9 +252,9 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.w600,
-      ),
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
     );
   }
 }
@@ -271,11 +273,7 @@ class _NoRisksBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.shield_outlined,
-            color: AppColors.good,
-            size: 20,
-          ),
+          Icon(Icons.shield_outlined, color: AppColors.good, size: 20),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
@@ -294,7 +292,7 @@ class _NoRisksBanner extends StatelessWidget {
 class _RiskTile extends StatelessWidget {
   const _RiskTile({required this.risk});
 
-  final IngredientRisk risk;
+  final Risk risk;
 
   @override
   Widget build(BuildContext context) {
@@ -321,7 +319,11 @@ class _RiskTile extends StatelessWidget {
             AppSpacing.lg,
             AppSpacing.lg,
           ),
-          leading: Icon(_iconForRisk(risk.severity), color: riskColor, size: 22),
+          leading: Icon(
+            _iconForRisk(risk.severity),
+            color: riskColor,
+            size: 22,
+          ),
           title: Text(
             risk.title,
             style: theme.textTheme.bodyMedium?.copyWith(
@@ -339,10 +341,7 @@ class _RiskTile extends StatelessWidget {
           children: [
             Align(
               alignment: Alignment.centerLeft,
-              child: Text(
-                risk.description,
-                style: theme.textTheme.bodyMedium,
-              ),
+              child: Text(risk.description, style: theme.textTheme.bodyMedium),
             ),
           ],
         ),
@@ -363,6 +362,95 @@ class _RiskTile extends StatelessWidget {
       RiskLevel.low => Icons.info_outline,
       RiskLevel.medium => Icons.warning_amber_outlined,
       RiskLevel.high => Icons.report_problem_outlined,
+    };
+  }
+}
+
+class _IngredientTile extends StatelessWidget {
+  const _IngredientTile({required this.ingredient});
+
+  final Ingredient ingredient;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final riskColor = _colorForRisk(ingredient.risk);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        color: riskColor.withValues(alpha: 0.05),
+        borderRadius: AppRadius.mdAll,
+        border: Border.all(color: riskColor.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        children: [
+          Icon(_iconForRisk(ingredient.risk), color: riskColor, size: 20),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ingredient.name,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (ingredient.description != null &&
+                    ingredient.description!.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    ingredient.description!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: riskColor.withValues(alpha: 0.12),
+              borderRadius: AppRadius.smAll,
+            ),
+            child: Text(
+              ingredient.risk.name.toUpperCase(),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: riskColor,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _colorForRisk(IngredientRiskLevel level) {
+    return switch (level) {
+      IngredientRiskLevel.safe => AppColors.good,
+      IngredientRiskLevel.caution => AppColors.riskMedium,
+      IngredientRiskLevel.dangerous => AppColors.riskHigh,
+    };
+  }
+
+  IconData _iconForRisk(IngredientRiskLevel level) {
+    return switch (level) {
+      IngredientRiskLevel.safe => Icons.check_circle_outline,
+      IngredientRiskLevel.caution => Icons.warning_amber_outlined,
+      IngredientRiskLevel.dangerous => Icons.report_problem_outlined,
     };
   }
 }

@@ -26,14 +26,14 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       final session = next.value;
       final analysis = session?.analysis;
 
-      if (session?.step == ScanStep.productMissing) {
+      if (session?.step == ScanStep.analysisMissing) {
         context.go('/app/scan/ingredients/${session!.id}');
       }
 
       if (session?.step == ScanStep.completed && analysis != null) {
         showAnalysisResultBottomSheet(
           context: context,
-          analysisId: analysis.barcode,
+          barcode: analysis.barcode,
           onScanAnother: () {
             ref.read(scanControllerProvider.notifier).reset();
             context.go('/app/scan');
@@ -405,14 +405,16 @@ class _ScanStatePanel extends StatelessWidget {
       icon: _iconForStep(session.step),
       iconColor: _colorForStep(session.step, theme),
       title: _titleForStep(session.step),
-      message: session.product?.name ?? 'Continue the scan flow.',
+      message: session.barcode != null
+          ? 'Barcode ${session.barcode}'
+          : 'Continue the scan flow.',
     );
   }
 
   IconData _iconForStep(ScanStep step) {
     return switch (step) {
       ScanStep.completed => Icons.check_circle_outline,
-      ScanStep.productMissing => Icons.document_scanner_outlined,
+      ScanStep.analysisMissing => Icons.document_scanner_outlined,
       ScanStep.failed => Icons.error_outline,
       _ => Icons.info_outline,
     };
@@ -429,7 +431,7 @@ class _ScanStatePanel extends StatelessWidget {
   String _titleForStep(ScanStep step) {
     return switch (step) {
       ScanStep.completed => 'Result ready',
-      ScanStep.productMissing => 'Ingredients required',
+      ScanStep.analysisMissing => 'Ingredients required',
       ScanStep.failed => 'Scan failed',
       _ => 'Current step: ${step.name}',
     };

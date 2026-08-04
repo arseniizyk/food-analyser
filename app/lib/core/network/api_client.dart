@@ -6,70 +6,13 @@ import 'api_error.dart';
 import '../storage/secure_storage.dart';
 
 abstract interface class ApiClient {
-  Future<Map<String, Object?>?> getProductByBarcode(String barcode);
-
-  Future<Map<String, Object?>> analyzeProduct({
+  Future<Map<String, Object?>> analyze({
     required String barcode,
     required String imagePath,
     String? userId,
   });
 
   Future<Map<String, Object?>?> getAnalysisByBarcode(String barcode);
-}
-
-class FakeApiClient implements ApiClient {
-  final Map<String, Map<String, Object?>> _productsByBarcode = {
-    '460000000001': {
-      'id': 'product-1',
-      'barcode': '460000000001',
-      'name': 'Protein Bar',
-      'brand': 'Green Bite',
-      'score': 86,
-      'grade': 'good',
-      'ingredients': ['oats', 'almonds', 'sugar', 'cocoa'],
-      'createdAt': DateTime(2026, 1, 1).toIso8601String(),
-    },
-  };
-
-  final Map<String, Map<String, Object?>> _analyses = {};
-
-  @override
-  Future<Map<String, Object?>?> getProductByBarcode(String barcode) async {
-    await Future<void>.delayed(const Duration(milliseconds: 450));
-    return _productsByBarcode[barcode];
-  }
-
-  @override
-  Future<Map<String, Object?>> analyzeProduct({
-    required String barcode,
-    required String imagePath,
-    String? userId,
-  }) async {
-    await Future<void>.delayed(const Duration(milliseconds: 700));
-    final score = 85;
-    final analysis = {
-      'barcode': barcode,
-      'userId': userId,
-      'score': score,
-      'grade': score >= 80 ? 'good' : 'average',
-      'summary': ['Composition looks balanced.', 'No major risks detected.'],
-      'risks': [],
-      'ingredients': ['ingredient1', 'ingredient2'],
-      'createdAt': DateTime.now().toIso8601String(),
-    };
-
-    _analyses[analysis['id']! as String] = analysis;
-    return analysis;
-  }
-
-  @override
-  Future<Map<String, Object?>?> getAnalysisByBarcode(String barcode) async {
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-    return _analyses.values.cast<Map<String, Object?>?>().firstWhere(
-      (a) => a != null && a['barcode'] == barcode,
-      orElse: () => null,
-    );
-  }
 }
 
 /// Real HTTP API client that communicates with backend services.
@@ -114,36 +57,7 @@ class HttpApiClient implements ApiClient {
   }
 
   @override
-  Future<Map<String, Object?>?> getProductByBarcode(String barcode) async {
-    try {
-      final uri = Uri.parse('$baseUrl/api/v1/product/$barcode');
-      final headers = await _authHeaders();
-      final response = await http
-          .get(uri, headers: headers)
-          .timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 404) {
-        return null;
-      }
-      if (response.statusCode != 200) {
-        final body = response.body;
-        _throwApiError(
-          response.statusCode,
-          body,
-          'Не удалось получить данные продукта',
-        );
-      }
-
-      return jsonDecode(response.body) as Map<String, Object?>?;
-    } on ApiError {
-      rethrow;
-    } catch (e) {
-      throw ApiError('Не удалось получить данные продукта');
-    }
-  }
-
-  @override
-  Future<Map<String, Object?>> analyzeProduct({
+  Future<Map<String, Object?>> analyze({
     required String barcode,
     required String imagePath,
     String? userId,
@@ -158,6 +72,9 @@ class HttpApiClient implements ApiClient {
       final request = http.MultipartRequest('POST', uri);
 
       request.files.add(await http.MultipartFile.fromPath('image', imagePath));
+      if (userId != null && userId.isNotEmpty) {
+        request.fields['user_id'] = userId;
+      }
 
       final headers = await _authHeaders();
       request.headers.addAll(headers);

@@ -22,10 +22,8 @@ final localStorageProvider = Provider<LocalStorage>(
   (ref) => MemoryLocalStorage(),
 );
 
-final authRepositoryProvider = Provider<AuthRepository>(
-  (ref) {
-    final repo = AuthRepositoryImpl(ref.read(secureStorageProvider));
-    ref.onDispose(repo.dispose);
-    return repo;
-  },
-);
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  final repo = AuthRepositoryImpl(ref.read(secureStorageProvider));
+  ref.onDispose(repo.dispose);
+  return repo;
+});

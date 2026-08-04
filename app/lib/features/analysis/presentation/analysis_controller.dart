@@ -23,12 +23,12 @@ final analysisControllerProvider =
     );
 
 class AnalysisController extends AsyncNotifier<Analysis?> {
-  AnalysisController(this.analysisId);
+  AnalysisController(this.barcode);
 
-  final String analysisId;
+  final String barcode;
 
   @override
   Future<Analysis?> build() {
-    return ref.read(analysisRepositoryProvider).getById(analysisId);
+    return ref.read(analysisRepositoryProvider).getByBarcode(barcode);
   }
 }
