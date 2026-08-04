@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/camera/barcode_utils.dart';
 import '../../analysis/presentation/analysis_controller.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../application/start_scan_session_use_case.dart';
@@ -21,25 +22,26 @@ final scanControllerProvider =
     AsyncNotifierProvider<ScanController, ScanSession?>(ScanController.new);
 
 class ScanController extends AsyncNotifier<ScanSession?> {
+  final Map<String, ScanSession> _sessions = {};
+
   @override
   Future<ScanSession?> build() async => null;
 
+  ScanSession _trackSession(ScanSession session) {
+    _sessions[session.id] = session;
+    return session;
+  }
+
   Future<void> scanBarcode(String barcode) async {
-    final normalizedBarcode = barcode.trim();
-    if (normalizedBarcode.isEmpty) {
-      state = AsyncError(
-        ArgumentError('Barcode is required.'),
-        StackTrace.current,
-      );
+    final normalizedBarcode = BarcodeUtils.normalizeRetailBarcode(barcode);
+    if (normalizedBarcode == null) {
+      state = await _error(ArgumentError('Invalid barcode format.'));
       return;
     }
 
     final user = ref.read(authControllerProvider).value;
     if (user == null) {
-      state = AsyncError(
-        StateError('User is not authenticated.'),
-        StackTrace.current,
-      );
+      state = await _error(StateError('User is not authenticated.'));
       return;
     }
 
@@ -48,37 +50,25 @@ class ScanController extends AsyncNotifier<ScanSession?> {
       final session = await ref
           .read(startScanSessionUseCaseProvider)
           .call(barcode: normalizedBarcode, userId: user.id);
-      return session;
+      return _trackSession(session);
     });
-  }
-
-  Future<ScanSession> startIngredientSession({String? barcode}) async {
-    final session = ScanSession(
-      id: 'scan-${DateTime.now().microsecondsSinceEpoch}',
-      barcode: barcode,
-      ingredientsImagePath: null,
-      extractedText: null,
-      analysis: null,
-      step: ScanStep.ingredientsScanning,
-    );
-    state = AsyncData(session);
-    return session;
   }
 
   Future<void> scanIngredients({
     required String imagePath,
-    String? sessionId,
+    required String sessionId,
   }) async {
     final normalizedPath = imagePath.trim();
     if (normalizedPath.isEmpty) {
-      state = AsyncError(
-        ArgumentError('Image path is required.'),
-        StackTrace.current,
-      );
+      state = await _error(ArgumentError('Image path is required.'));
       return;
     }
 
-    var session = state.value ?? await startIngredientSession();
+    final session = _sessions[sessionId];
+    if (session == null) {
+      state = await _error(StateError('Scan session was not found.'));
+      return;
+    }
 
     final user = ref.read(authControllerProvider).value;
     final userId = (user == null || user.isGuest) ? null : user.id;
@@ -92,8 +82,12 @@ class ScanController extends AsyncNotifier<ScanSession?> {
             userId: userId,
             imagePath: normalizedPath,
           );
-      return updatedSession;
+      return _trackSession(updatedSession);
     });
+  }
+
+  Future<AsyncValue<ScanSession?>> _error(Object error) async {
+    return AsyncValue.guard<ScanSession?>(() async => throw error);
   }
 
   void reset() {

@@ -77,16 +77,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             _ScanActionRow(
               isLoading: scanState.isLoading,
               onBarcodeScan: () => context.go('/app/scan/barcode'),
-              onIngredientsScan: () async {
-                // Сбрасываем предыдущую сессию перед созданием новой
-                ref.read(scanControllerProvider.notifier).reset();
-
-                final session = await ref
-                    .read(scanControllerProvider.notifier)
-                    .startIngredientSession();
-                if (!context.mounted) return;
-                context.go('/app/scan/ingredients/${session.id}');
-              },
             ),
             const SizedBox(height: AppSpacing.xxl),
             _ManualBarcodeSection(
@@ -155,40 +145,18 @@ class _ModeBanner extends StatelessWidget {
 }
 
 class _ScanActionRow extends StatelessWidget {
-  const _ScanActionRow({
-    required this.isLoading,
-    required this.onBarcodeScan,
-    required this.onIngredientsScan,
-  });
+  const _ScanActionRow({required this.isLoading, required this.onBarcodeScan});
 
   final bool isLoading;
   final VoidCallback onBarcodeScan;
-  final VoidCallback onIngredientsScan;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _ScanOptionCard(
-            icon: Icons.qr_code_scanner,
-            title: 'Barcode',
-            subtitle: 'Fast lookup',
-            onTap: isLoading ? null : onBarcodeScan,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: _ScanOptionCard(
-            icon: Icons.document_scanner,
-            title: 'Ingredients',
-            subtitle: 'OCR scan',
-            onTap: isLoading
-                ? null
-                : onIngredientsScan, // Добавлена проверка isLoading
-          ),
-        ),
-      ],
+    return _ScanOptionCard(
+      icon: Icons.qr_code_scanner,
+      title: 'Barcode',
+      subtitle: 'Fast lookup',
+      onTap: isLoading ? null : onBarcodeScan,
     );
   }
 }

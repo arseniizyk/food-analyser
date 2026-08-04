@@ -36,10 +36,4 @@ class ScanSession {
   }
 }
 
-enum ScanStep {
-  checkingAnalysis,
-  ingredientsScanning,
-  analysisMissing,
-  completed,
-  failed,
-}
+enum ScanStep { checkingAnalysis, analysisMissing, completed, failed }
