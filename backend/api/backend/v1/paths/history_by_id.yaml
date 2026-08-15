@@ -1,0 +1,34 @@
+parameters:
+  - $ref: ../params/user_id.yaml
+  # TODO: add limits, offset
+
+get:
+  summary: Get user scans
+  operationId: getUserScans
+  tags:
+    - Analysis
+  responses:
+    "200":
+      description: User's scans found
+      content:
+        application/json:
+          schema:
+            $ref: ../components/user_scans_history.yaml
+    '400':
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/errors/bad_request_error.yaml
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/errors/internal_server_error.yaml
+    default:
+      description: Unexpected error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/errors/generic_error.yaml

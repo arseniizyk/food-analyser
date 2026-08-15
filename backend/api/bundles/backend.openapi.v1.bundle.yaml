@@ -73,7 +73,7 @@ paths:
       summary: Analyze analysis nutrition photo
       operationId: Analyze
       tags:
-        - Product, Analysis
+        - Barcode, Analysis
       requestBody:
         required: true
         content:
@@ -143,6 +143,39 @@ paths:
           description: Invalid Google token.
         '500':
           description: Internal server error.
+  /api/v1/history/{user_id}:
+    parameters:
+      - $ref: '#/components/parameters/user_id'
+    get:
+      summary: Get user scans
+      operationId: getUserScans
+      tags:
+        - Analysis
+      responses:
+        '200':
+          description: User's scans found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/user_scans_history'
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bad_request_error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/internal_server_error'
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/generic_error'
 components:
   parameters:
     barcode:
@@ -155,6 +188,14 @@ components:
         minLength: 1
         maxLength: 15
         example: '5901234123457'
+    user_id:
+      name: user_id
+      in: path
+      required: true
+      description: User UUID
+      schema:
+        type: string
+        format: uuid
   schemas:
     generic_error:
       type: object
@@ -319,3 +360,19 @@ components:
         user_id:
           type: string
           description: Unique user ID created or retrieved from backend
+    user_scans_history:
+      type: array
+      items:
+        type: object
+        description: Barcode
+        required:
+          - barcode
+          - created_at
+        properties:
+          barcode:
+            type: string
+            example: '4601234567890'
+          created_at:
+            type: string
+            format: date-time
+            example: '2026-08-15T20:50:00Z'

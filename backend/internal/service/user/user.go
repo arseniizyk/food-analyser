@@ -11,7 +11,7 @@ type Repository interface {
 	GetByGoogleID(ctx context.Context, googleID string) (*models.User, error)
 	CreateIfNotExists(ctx context.Context, googleID string) (*models.User, error)
 	AddScan(ctx context.Context, userID, barcode string) error
-	GetScans(ctx context.Context, userID string) ([]string, error)
+	GetScans(ctx context.Context, userID string) ([]models.Scan, error)
 }
 
 type Service struct {
