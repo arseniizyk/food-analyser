@@ -19,8 +19,8 @@ import (
 	"github.com/arseniizyk/food-analyser/backend/internal/config"
 	handler "github.com/arseniizyk/food-analyser/backend/internal/handler"
 	analysisHandler "github.com/arseniizyk/food-analyser/backend/internal/handler/analysis"
-	authHandler "github.com/arseniizyk/food-analyser/backend/internal/handler/auth"
 	"github.com/arseniizyk/food-analyser/backend/internal/handler/middlewares"
+	authHandler "github.com/arseniizyk/food-analyser/backend/internal/handler/user"
 	analysisRepository "github.com/arseniizyk/food-analyser/backend/internal/repository/analysis"
 	userRepository "github.com/arseniizyk/food-analyser/backend/internal/repository/user"
 	analysisService "github.com/arseniizyk/food-analyser/backend/internal/service/analysis"
@@ -55,6 +55,7 @@ func main() {
 		middleware.Recoverer,
 		middleware.Timeout(cfg.HTTP.ReadTimeout),
 		middleware.Compress(5),
+		// TODO: JWT middleware
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second) // Задержка может быть больше при первом запуске ML
@@ -76,7 +77,7 @@ func main() {
 	analysisH := analysisHandler.New(analysisSvc, userSvc)
 
 	authSvc := authService.New(logger, cfg.Google.ClientID, userRepo)
-	authH := authHandler.New(authSvc)
+	authH := authHandler.New(authSvc, userSvc)
 
 	h := handler.NewHandler(authH, analysisH)
 

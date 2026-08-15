@@ -5,7 +5,7 @@ post:
   summary: Analyze analysis nutrition photo
   operationId: Analyze
   tags:
-    - Product, Analysis
+    - Barcode, Analysis
   requestBody:
     required: true
     content:
