@@ -2,9 +2,11 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/arseniizyk/food-analyser/backend/internal/errs"
 	"github.com/arseniizyk/food-analyser/backend/internal/models"
@@ -24,9 +26,39 @@ func (r *Repository) GetByGoogleID(ctx context.Context, googleID string) (*model
 	return &u, nil
 }
 
-// TODO: check if scans is null
-func (r *Repository) GetScans(ctx context.Context, userID string) ([]string, error) {
-	query, args, err := r.sb.Select("barcode").From("user_scans").Where(sq.Eq{"user_id": userID}).OrderBy("created_at DESC").ToSql()
+func (r *Repository) IsExists(ctx context.Context, userID string) error {
+	var exists int
+
+	query, args, err := r.sb.
+		Select("1").
+		From("users").
+		Where(sq.Eq{"id": userID}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("build query: %w", err)
+	}
+
+	if err := r.pool.QueryRow(ctx, query, args...).Scan(&exists); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return errs.ErrUserNotFound
+		}
+		return fmt.Errorf("check user existence: %w", err)
+	}
+
+	return nil
+}
+
+func (r *Repository) GetScans(ctx context.Context, userID string) ([]models.Scan, error) {
+	if err := r.IsExists(ctx, userID); err != nil {
+		return nil, err
+	}
+
+	query, args, err := r.sb.Select("barcode, created_at").
+		From("user_scans").
+		Where(sq.Eq{"user_id": userID}).
+		OrderBy("created_at DESC").
+		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("build query scans: %w", err)
 	}
@@ -37,13 +69,18 @@ func (r *Repository) GetScans(ctx context.Context, userID string) ([]string, err
 	}
 	defer rows.Close()
 
-	var res []string
+	res := make([]models.Scan, 0)
 	for rows.Next() {
-		var barcode string
-		if err := rows.Scan(&barcode); err != nil {
+		var scan models.Scan
+		if err := rows.Scan(&scan.Barcode, &scan.CreatedAt); err != nil {
 			return nil, fmt.Errorf("scan row: %w", err)
 		}
-		res = append(res, barcode)
+		res = append(res, scan)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration: %w", err)
+	}
+
 	return res, nil
 }

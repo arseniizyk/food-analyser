@@ -27,7 +27,7 @@ func (s *Service) GetByGoogleID(ctx context.Context, googleID string) (*models.U
 	return user, nil
 }
 
-func (s *Service) GetScans(ctx context.Context, userID string) ([]string, error) {
+func (s *Service) GetScans(ctx context.Context, userID string) ([]models.Scan, error) {
 	scans, err := s.repository.GetScans(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("get scans: %w", err)
