@@ -25,6 +25,6 @@ func (h *Handler) GetAnalysisByBarcode(w http.ResponseWriter, r *http.Request, b
 		return
 	}
 
-	//h.userService.AddScan(ctx, ) TODO: получение UserID из JWT и сохранение в repository
+	// h.userService.AddScan(ctx, ) TODO: получение UserID из JWT и сохранение в repository
 	utils.WriteSuccess(w, r, http.StatusOK, analysis)
 }
