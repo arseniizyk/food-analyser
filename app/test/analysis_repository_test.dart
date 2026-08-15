@@ -24,6 +24,11 @@ class FakeApiClient implements ApiClient {
     lookupCalls++;
     return analysisJson;
   }
+
+  @override
+  Future<List<Map<String, Object?>>> getHistory() async {
+    return [];
+  }
 }
 
 void main() {

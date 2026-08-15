@@ -48,10 +48,22 @@ class GoogleAuthService {
 
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
       final userId = data['user_id'] as String? ?? '';
+      final token = data['access_token'] as String? ?? '';
+      final email = (data['email'] as String?) ?? account.email;
 
-      return AuthorizedUser(id: userId, email: account.email, accessToken: '');
+      return AuthorizedUser(id: userId, email: email, accessToken: token);
     } catch (e) {
       throw Exception('Failed to authenticate with backend: $e');
+    }
+  }
+
+  Future<void> signOut() async {
+    try {
+      final googleSignIn = GoogleSignIn.instance;
+      await googleSignIn.initialize(serverClientId: _serverClientId);
+      await googleSignIn.signOut();
+    } catch (_) {
+      // Signing out of Google must never break the local logout.
     }
   }
 }

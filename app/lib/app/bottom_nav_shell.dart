@@ -24,6 +24,11 @@ class BottomNavShell extends StatelessWidget {
             selectedIcon: Icon(Icons.history),
             label: 'History',
           ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
         ],
       ),
     );

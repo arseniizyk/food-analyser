@@ -5,8 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_loading_view.dart';
-import '../../analysis/domain/analysis.dart';
 import '../../analysis/presentation/analysis_result_bottom_sheet.dart';
+import '../domain/history_item.dart';
 import 'history_controller.dart';
 import 'history_item_tile.dart';
 
@@ -94,13 +94,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   )
                 else
                   ...filteredItems.map(
-                    (analysis) => Padding(
+                    (item) => Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                       child: HistoryItemTile(
-                        analysis: analysis,
+                        item: item,
                         onTap: () => showAnalysisResultBottomSheet(
                           context: context,
-                          barcode: analysis.barcode,
+                          barcode: item.barcode,
                           onScanAnother: () {
                             context.go('/app/scan');
                           },
@@ -116,7 +116,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     );
   }
 
-  List<Analysis> _applyFilter(List<Analysis> items) {
+  List<HistoryItem> _applyFilter(List<HistoryItem> items) {
     return switch (_filter) {
       _HistoryFilter.all => items,
       _HistoryFilter.good => items.where((item) => item.score >= 80).toList(),

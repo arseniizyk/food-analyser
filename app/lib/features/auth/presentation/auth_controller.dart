@@ -42,7 +42,7 @@ class AuthController extends AsyncNotifier<AppUser?> {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       await ref.read(authRepositoryProvider).signOut();
-      return null;
+      return ref.read(authRepositoryProvider).currentUser();
     });
   }
 }

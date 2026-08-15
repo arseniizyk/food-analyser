@@ -1,5 +1,5 @@
-import '../../analysis/domain/analysis.dart';
+import 'history_item.dart';
 
 abstract interface class HistoryRepository {
-  Future<List<Analysis>> getHistory(String userId);
+  Future<List<HistoryItem>> getHistory(String userId);
 }
