@@ -15,6 +15,7 @@ type Config struct {
 	HTTP      HTTPConfig     `env-prefix:"HTTP_"`
 	Postgres  PostgresConfig `env-prefix:"POSTGRES_"`
 	Google    GoogleConfig   `env-prefix:"GOOGLE_"`
+	JWT       JWTConfig      `env-prefix:"JWT_"`
 }
 
 type HTTPConfig struct {
@@ -53,6 +54,11 @@ type LLMConfig struct {
 
 type GoogleConfig struct {
 	ClientID string `env:"OAUTH_CLIENT_ID" env-default:""`
+}
+
+type JWTConfig struct {
+	Secret string        `env:"SECRET" env-default:""`
+	TTL    time.Duration `env:"TTL" env-default:"720h"`
 }
 
 func (c MLConfig) Address() string { return net.JoinHostPort(c.Host, strconv.Itoa(c.Port)) }

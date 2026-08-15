@@ -3,6 +3,7 @@ package analysis
 import (
 	"context"
 	"io"
+	"log/slog"
 
 	"github.com/arseniizyk/food-analyser/backend/internal/models"
 )
@@ -19,11 +20,13 @@ type UserService interface {
 type Handler struct {
 	userService UserService
 	service     Service
+	logger      *slog.Logger
 }
 
-func New(service Service, userService UserService) *Handler {
+func New(logger *slog.Logger, service Service, userService UserService) *Handler {
 	return &Handler{
 		service:     service,
 		userService: userService,
+		logger:      logger,
 	}
 }

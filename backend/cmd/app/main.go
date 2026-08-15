@@ -25,6 +25,7 @@ import (
 	userRepository "github.com/arseniizyk/food-analyser/backend/internal/repository/user"
 	analysisService "github.com/arseniizyk/food-analyser/backend/internal/service/analysis"
 	authService "github.com/arseniizyk/food-analyser/backend/internal/service/auth"
+	jwtService "github.com/arseniizyk/food-analyser/backend/internal/service/jwt"
 	llmService "github.com/arseniizyk/food-analyser/backend/internal/service/llm"
 	mlService "github.com/arseniizyk/food-analyser/backend/internal/service/ml"
 	userService "github.com/arseniizyk/food-analyser/backend/internal/service/user"
@@ -40,6 +41,10 @@ func main() {
 		panic(fmt.Sprintf("error building config: %v", err))
 	}
 
+	if cfg.JWT.Secret == "" {
+		panic("JWT_SECRET must be set (see .example.env)")
+	}
+
 	pool, err := pgxpool.New(context.Background(), cfg.Postgres.ConnString())
 	if err != nil {
 		panic(fmt.Sprintf("error connecting postgres: %v", err))
@@ -49,13 +54,18 @@ func main() {
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
+	jwtManager, err := jwtService.New(cfg.JWT.Secret, cfg.JWT.TTL)
+	if err != nil {
+		panic(fmt.Sprintf("error building jwt manager: %v", err))
+	}
+
 	r.Use(
 		middleware.RequestID,
 		middlewares.RequestLogger(logger),
 		middleware.Recoverer,
 		middleware.Timeout(cfg.HTTP.ReadTimeout),
 		middleware.Compress(5),
-		// TODO: JWT middleware
+		middlewares.JWTAuth(jwtManager),
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second) // Задержка может быть больше при первом запуске ML
@@ -74,10 +84,10 @@ func main() {
 	userRepo := userRepository.New(pool)
 	userSvc := userService.New(logger, userRepo)
 
-	analysisH := analysisHandler.New(analysisSvc, userSvc)
+	analysisH := analysisHandler.New(logger, analysisSvc, userSvc)
 
-	authSvc := authService.New(logger, cfg.Google.ClientID, userRepo)
-	authH := authHandler.New(authSvc, userSvc)
+	authSvc := authService.New(logger, cfg.Google.ClientID, userRepo, jwtManager)
+	authH := authHandler.New(logger, authSvc, userSvc)
 
 	h := handler.NewHandler(authH, analysisH)
 
