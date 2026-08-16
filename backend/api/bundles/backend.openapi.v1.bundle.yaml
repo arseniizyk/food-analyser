@@ -143,9 +143,7 @@ paths:
           description: Invalid Google token.
         '500':
           description: Internal server error.
-  /api/v1/history/{user_id}:
-    parameters:
-      - $ref: '#/components/parameters/user_id'
+  /api/v1/history:
     get:
       summary: Get user scans
       operationId: getUserScans
@@ -158,12 +156,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/user_scans_history'
-        '400':
-          description: Bad request - validation error
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/bad_request_error'
+                $ref: '#/components/schemas/generic_error'
         '500':
           description: Internal server error
           content:
@@ -188,14 +186,6 @@ components:
         minLength: 1
         maxLength: 15
         example: '5901234123457'
-    user_id:
-      name: user_id
-      in: path
-      required: true
-      description: User UUID
-      schema:
-        type: string
-        format: uuid
   schemas:
     generic_error:
       type: object
@@ -368,6 +358,7 @@ components:
         required:
           - barcode
           - created_at
+          - score
         properties:
           barcode:
             type: string
@@ -376,3 +367,6 @@ components:
             type: string
             format: date-time
             example: '2026-08-15T20:50:00Z'
+          score:
+            type: integer
+            example: 78

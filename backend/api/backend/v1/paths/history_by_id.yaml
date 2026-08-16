@@ -1,7 +1,3 @@
-parameters:
-  - $ref: ../params/user_id.yaml
-  # TODO: add limits, offset
-
 get:
   summary: Get user scans
   operationId: getUserScans
@@ -14,12 +10,12 @@ get:
         application/json:
           schema:
             $ref: ../components/user_scans_history.yaml
-    '400':
-      description: Bad request - validation error
+    '401':
+      description: Unauthorized
       content:
         application/json:
           schema:
-            $ref: ../components/errors/bad_request_error.yaml
+            $ref: ../components/errors/generic_error.yaml
     '500':
       description: Internal server error
       content:

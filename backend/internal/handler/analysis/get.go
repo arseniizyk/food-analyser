@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/arseniizyk/food-analyser/backend/internal/errs"
+	"github.com/arseniizyk/food-analyser/backend/internal/handler/middlewares"
 	"github.com/arseniizyk/food-analyser/backend/internal/handler/utils"
 )
 
@@ -25,6 +26,11 @@ func (h *Handler) GetAnalysisByBarcode(w http.ResponseWriter, r *http.Request, b
 		return
 	}
 
-	// h.userService.AddScan(ctx, ) TODO: получение UserID из JWT и сохранение в repository
+	if userID, ok := middlewares.UserIDFromContext(r.Context()); ok {
+		if err := h.userService.AddScan(ctx, userID, barcode); err != nil {
+			h.logger.Error("failed to add scan", "user_id", userID, "barcode", barcode, "error", err)
+		}
+	}
+
 	utils.WriteSuccess(w, r, http.StatusOK, analysis)
 }

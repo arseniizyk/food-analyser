@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/camera/barcode_utils.dart';
 import '../../analysis/presentation/analysis_controller.dart';
 import '../../auth/presentation/auth_controller.dart';
+import '../../history/presentation/history_controller.dart';
 import '../application/start_scan_session_use_case.dart';
 import '../data/scan_repository_impl.dart';
 import '../domain/scan_repository.dart';
@@ -82,6 +83,7 @@ class ScanController extends AsyncNotifier<ScanSession?> {
             userId: userId,
             imagePath: normalizedPath,
           );
+      ref.invalidate(historyControllerProvider);
       return _trackSession(updatedSession);
     });
   }

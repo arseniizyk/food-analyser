@@ -1,6 +1,6 @@
+import '../../../core/network/api_client.dart';
 import '../../../core/storage/local_storage.dart';
-import '../../analysis/data/analysis_dto.dart';
-import '../../analysis/domain/analysis.dart';
+import '../domain/history_item.dart';
 import '../domain/history_repository.dart';
 
 class LocalHistoryRepository implements HistoryRepository {
@@ -9,8 +9,20 @@ class LocalHistoryRepository implements HistoryRepository {
   final LocalStorage _localStorage;
 
   @override
-  Future<List<Analysis>> getHistory(String userId) async {
-    final json = await _localStorage.getHistory(userId);
-    return json.map(AnalysisDto.fromJson).toList();
+  Future<List<HistoryItem>> getHistory(String userId) async {
+    final json = await _localStorage.getHistory('');
+    return json.map(HistoryItem.fromJson).toList();
+  }
+}
+
+class RemoteHistoryRepository implements HistoryRepository {
+  const RemoteHistoryRepository(this._apiClient);
+
+  final ApiClient _apiClient;
+
+  @override
+  Future<List<HistoryItem>> getHistory(String userId) async {
+    final json = await _apiClient.getHistory();
+    return json.map(HistoryItem.fromJson).toList();
   }
 }

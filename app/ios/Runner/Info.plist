@@ -8,6 +8,17 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>Foodify</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.foodanalyzer.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.339737972922-330g7d0blrb8k0db8759a628782j9pa9</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Camera access is used to scan product barcodes and photograph ingredient labels.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

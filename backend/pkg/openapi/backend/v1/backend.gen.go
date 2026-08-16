@@ -196,8 +196,8 @@ type ServerInterface interface {
 	// (GET /api/v1/health)
 	Health(w http.ResponseWriter, r *http.Request)
 	// Get user scans
-	// (GET /api/v1/history/{user_id})
-	GetUserScans(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
+	// (GET /api/v1/history)
+	GetUserScans(w http.ResponseWriter, r *http.Request)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -229,8 +229,8 @@ func (_ Unimplemented) Health(w http.ResponseWriter, r *http.Request) {
 }
 
 // Get user scans
-// (GET /api/v1/history/{user_id})
-func (_ Unimplemented) GetUserScans(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+// (GET /api/v1/history)
+func (_ Unimplemented) GetUserScans(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -326,20 +326,8 @@ func (siw *ServerInterfaceWrapper) Health(w http.ResponseWriter, r *http.Request
 // GetUserScans operation middleware
 func (siw *ServerInterfaceWrapper) GetUserScans(w http.ResponseWriter, r *http.Request) {
 
-	var err error
-	_ = err
-
-	// ------------- Path parameter "user_id" -------------
-	var userId openapi_types.UUID
-
-	err = runtime.BindStyledParameterWithOptions("simple", "user_id", chi.URLParam(r, "user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid"})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
-		return
-	}
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetUserScans(w, r, userId)
+		siw.Handler.GetUserScans(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -475,7 +463,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/v1/health", wrapper.Health)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/api/v1/history/{user_id}", wrapper.GetUserScans)
+		r.Get(options.BaseURL+"/api/v1/history", wrapper.GetUserScans)
 	})
 
 	return r
