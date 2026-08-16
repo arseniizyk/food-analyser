@@ -245,6 +245,7 @@ type MiddlewareFunc func(http.Handler) http.Handler
 
 // GetAnalysisByBarcode operation middleware
 func (siw *ServerInterfaceWrapper) GetAnalysisByBarcode(w http.ResponseWriter, r *http.Request) {
+
 	var err error
 	_ = err
 
@@ -270,6 +271,7 @@ func (siw *ServerInterfaceWrapper) GetAnalysisByBarcode(w http.ResponseWriter, r
 
 // Analyze operation middleware
 func (siw *ServerInterfaceWrapper) Analyze(w http.ResponseWriter, r *http.Request) {
+
 	var err error
 	_ = err
 
@@ -295,6 +297,7 @@ func (siw *ServerInterfaceWrapper) Analyze(w http.ResponseWriter, r *http.Reques
 
 // AuthenticateWithGoogle operation middleware
 func (siw *ServerInterfaceWrapper) AuthenticateWithGoogle(w http.ResponseWriter, r *http.Request) {
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AuthenticateWithGoogle(w, r)
 	}))
@@ -308,6 +311,7 @@ func (siw *ServerInterfaceWrapper) AuthenticateWithGoogle(w http.ResponseWriter,
 
 // Health operation middleware
 func (siw *ServerInterfaceWrapper) Health(w http.ResponseWriter, r *http.Request) {
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.Health(w, r)
 	}))
@@ -321,6 +325,7 @@ func (siw *ServerInterfaceWrapper) Health(w http.ResponseWriter, r *http.Request
 
 // GetUserScans operation middleware
 func (siw *ServerInterfaceWrapper) GetUserScans(w http.ResponseWriter, r *http.Request) {
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetUserScans(w, r)
 	}))
