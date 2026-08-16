@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../core/config/env.dart';
 import '../domain/app_user.dart';
+import '../domain/auth_exceptions.dart';
 
 class GoogleAuthService {
   static const _serverClientId =
@@ -23,18 +24,14 @@ class GoogleAuthService {
       final account = await _googleSignIn.signIn();
 
       if (account == null) {
-        throw Exception('Google sign-in was canceled.');
+        throw GoogleSignInCanceledException();
       }
 
       final authentication = await account.authentication;
       final idToken = authentication.idToken;
 
       if (idToken == null || idToken.isEmpty) {
-        throw Exception(
-          'Missing id token from Google sign-in. '
-          'Make sure google-services.json is properly configured '
-          'and the WebClientId matches your Google Cloud Console settings.',
-        );
+        throw Exception('Missing id token from Google sign-in. Please try again.');
       }
 
       final uri = Uri.parse('${Env.apiBaseUrl}/api/v1/auth/google');
@@ -64,6 +61,8 @@ class GoogleAuthService {
       } catch (e) {
         throw Exception('Failed to authenticate with backend: $e');
       }
+    } on GoogleSignInCanceledException {
+      rethrow;
     } catch (e) {
       throw Exception('Google sign-in failed: $e');
     }

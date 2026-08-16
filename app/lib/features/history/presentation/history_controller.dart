@@ -30,4 +30,12 @@ class HistoryController extends AsyncNotifier<List<HistoryItem>> {
     state = const AsyncLoading();
     state = await AsyncValue.guard(build);
   }
+
+  Future<void> refreshSilently() async {
+    if (state.isLoading) return;
+    final next = await AsyncValue.guard(build);
+    if (!next.hasError) {
+      state = next;
+    }
+  }
 }

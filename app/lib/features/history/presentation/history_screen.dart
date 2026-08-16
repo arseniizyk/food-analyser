@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/bottom_nav_shell.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_error_view.dart';
 import '../../../core/widgets/app_loading_view.dart';
@@ -17,8 +20,51 @@ class HistoryScreen extends ConsumerStatefulWidget {
   ConsumerState<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _HistoryScreenState extends ConsumerState<HistoryScreen> {
+class _HistoryScreenState extends ConsumerState<HistoryScreen>
+    with WidgetsBindingObserver {
+  static const _pollInterval = Duration(seconds: 10);
+
   _HistoryFilter _filter = _HistoryFilter.all;
+  Timer? _pollTimer;
+  bool _appIsForeground = true;
+  ProviderSubscription<Object?>? _tabSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _tabSubscription = ref.listenManual(
+      activeTabIndexProvider,
+      (_, _) => _syncPolling(),
+    );
+    _syncPolling();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _tabSubscription?.close();
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _appIsForeground = state == AppLifecycleState.resumed;
+    _syncPolling();
+  }
+
+  void _syncPolling() {
+    final isHistoryTab = ref.read(activeTabIndexProvider) == 1;
+    if (isHistoryTab && _appIsForeground) {
+      _pollTimer ??= Timer.periodic(_pollInterval, (_) {
+        ref.read(historyControllerProvider.notifier).refreshSilently();
+      });
+    } else {
+      _pollTimer?.cancel();
+      _pollTimer = null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
