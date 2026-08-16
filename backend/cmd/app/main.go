@@ -86,7 +86,7 @@ func main() {
 
 	analysisH := analysisHandler.New(logger, analysisSvc, userSvc)
 
-	authSvc := authService.New(logger, cfg.Google.ClientID, userRepo, jwtManager)
+	authSvc := authService.New(logger, cfg.Google.ClientID, cfg.Google.IOSClientID, userRepo, jwtManager)
 	authH := authHandler.New(logger, authSvc, userSvc)
 
 	h := handler.NewHandler(authH, analysisH)

@@ -53,7 +53,8 @@ type LLMConfig struct {
 }
 
 type GoogleConfig struct {
-	ClientID string `env:"OAUTH_CLIENT_ID" env-default:""`
+	ClientID    string `env:"OAUTH_CLIENT_ID" env-default:""`
+	IOSClientID string `env:"OAUTH_IOS_CLIENT_ID" env-default:""`
 }
 
 type JWTConfig struct {

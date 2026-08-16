@@ -16,15 +16,17 @@ type UserRepository interface {
 
 type Service struct {
 	clientID       string
+	iosClientID    string
 	userRepository UserRepository
 	jwtManager     *jwtpkg.Manager
 	httpClient     *http.Client
 	logger         *slog.Logger
 }
 
-func New(logger *slog.Logger, clientID string, users UserRepository, jwtManager *jwtpkg.Manager) *Service {
+func New(logger *slog.Logger, clientID, iosClientID string, users UserRepository, jwtManager *jwtpkg.Manager) *Service {
 	return &Service{
 		clientID:       clientID,
+		iosClientID:    iosClientID,
 		userRepository: users,
 		jwtManager:     jwtManager,
 		logger:         logger,

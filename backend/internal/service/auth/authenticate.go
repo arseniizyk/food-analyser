@@ -31,7 +31,7 @@ func (s *Service) Authenticate(ctx context.Context, idToken string) (userID, acc
 	if token.ErrorDescription != "" {
 		return "", "", "", fmt.Errorf("token info error: %s", token.ErrorDescription)
 	}
-	if token.Aud != s.clientID {
+	if token.Aud != s.clientID && token.Aud != s.iosClientID {
 		return "", "", "", fmt.Errorf("invalid audience")
 	}
 	if token.Sub == "" {
