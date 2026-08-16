@@ -4,8 +4,10 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/arseniizyk/food-analyser/backend/internal/models"
+	jwtpkg "github.com/arseniizyk/food-analyser/backend/internal/service/jwt"
 )
 
 type UserRepository interface {
@@ -14,16 +16,20 @@ type UserRepository interface {
 
 type Service struct {
 	clientID       string
+	iosClientID    string
 	userRepository UserRepository
+	jwtManager     *jwtpkg.Manager
 	httpClient     *http.Client
 	logger         *slog.Logger
 }
 
-func New(logger *slog.Logger, clientID string, users UserRepository) *Service {
+func New(logger *slog.Logger, clientID, iosClientID string, users UserRepository, jwtManager *jwtpkg.Manager) *Service {
 	return &Service{
 		clientID:       clientID,
+		iosClientID:    iosClientID,
 		userRepository: users,
+		jwtManager:     jwtManager,
 		logger:         logger,
-		httpClient:     &http.Client{}, // TODO: add timeouts
+		httpClient:     &http.Client{Timeout: 10 * time.Second},
 	}
 }

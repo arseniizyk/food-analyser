@@ -13,6 +13,8 @@ abstract interface class ApiClient {
   });
 
   Future<Map<String, Object?>?> getAnalysisByBarcode(String barcode);
+
+  Future<List<Map<String, Object?>>> getHistory();
 }
 
 /// Real HTTP API client that communicates with backend services.
@@ -22,9 +24,13 @@ class HttpApiClient implements ApiClient {
   final String baseUrl;
   final SecureStorage _secureStorage;
 
-  Future<Map<String, String>> _authHeaders() async {
+  Future<Map<String, String>> _authHeaders({
+    bool includeContentType = true,
+  }) async {
     final token = await _secureStorage.read('access_token');
-    final headers = <String, String>{'Content-Type': 'application/json'};
+    final headers = <String, String>{
+      if (includeContentType) 'Content-Type': 'application/json',
+    };
     if (token != null && token.isNotEmpty) {
       headers['Authorization'] = 'Bearer $token';
     }
@@ -76,7 +82,7 @@ class HttpApiClient implements ApiClient {
         request.fields['user_id'] = userId;
       }
 
-      final headers = await _authHeaders();
+      final headers = await _authHeaders(includeContentType: false);
       request.headers.addAll(headers);
 
       final response = await request.send().timeout(
@@ -147,6 +153,38 @@ class HttpApiClient implements ApiClient {
       rethrow;
     } catch (e) {
       throw ApiError('Не удалось получить результат анализа');
+    }
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> getHistory() async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/v1/history');
+      final headers = await _authHeaders();
+      final response = await http
+          .get(uri, headers: headers)
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        _throwApiError(
+          response.statusCode,
+          response.body,
+          'Не удалось получить историю',
+        );
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! List) {
+        throw const ApiError('Не удалось получить историю');
+      }
+
+      return decoded
+          .whereType<Map<String, Object?>>()
+          .toList(growable: false);
+    } on ApiError {
+      rethrow;
+    } catch (e) {
+      throw ApiError('Не удалось получить историю');
     }
   }
 }

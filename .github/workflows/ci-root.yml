@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
   push:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - "docker-compose.yml"
       - ".example.env"
@@ -16,7 +16,7 @@ on:
       - "backend/api/**"
       - ".github/workflows/ci-root.yml"
   pull_request:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - "docker-compose.yml"
       - ".example.env"

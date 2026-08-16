@@ -6,10 +6,11 @@ import '../domain/auth_repository.dart';
 import 'google_auth_service.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  AuthRepositoryImpl(this._secureStorage);
+  AuthRepositoryImpl(this._secureStorage, [GoogleAuthService? googleAuthService])
+      : _googleAuthService = googleAuthService ?? GoogleAuthService();
 
   final SecureStorage _secureStorage;
-  final GoogleAuthService _googleAuthService = GoogleAuthService();
+  final GoogleAuthService _googleAuthService;
   final StreamController<AppUser?> _userController =
       StreamController.broadcast();
 
@@ -64,12 +65,13 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> signOut() async {
-    _currentUser = null;
-    await _secureStorage.delete('auth_mode');
+    await _googleAuthService.signOut();
+    _currentUser = const GuestUser('guest-local');
+    await _secureStorage.write('auth_mode', 'guest');
     await _secureStorage.delete('user_id');
     await _secureStorage.delete('email');
     await _secureStorage.delete('access_token');
-    _userController.add(null);
+    _userController.add(_currentUser);
   }
 
   @override

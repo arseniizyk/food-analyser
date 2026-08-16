@@ -5,6 +5,7 @@ items:
   required:
     - barcode
     - created_at
+    - score
   properties:
     barcode:
       type: string
@@ -13,3 +14,6 @@ items:
       type: string
       format: date-time
       example: "2026-08-15T20:50:00Z"
+    score:
+      type: integer
+      example: 78

@@ -2,8 +2,6 @@ package handler
 
 import (
 	"net/http"
-
-	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 type AnalysisHandler interface {
@@ -13,7 +11,7 @@ type AnalysisHandler interface {
 
 type AuthHandler interface {
 	AuthenticateWithGoogle(w http.ResponseWriter, r *http.Request)
-	GetUserScans(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
+	GetUserScans(w http.ResponseWriter, r *http.Request)
 }
 
 type Handler struct {

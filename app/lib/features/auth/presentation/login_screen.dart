@@ -1,14 +1,49 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
 import 'auth_controller.dart';
 
-class LoginScreen extends ConsumerWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  StreamSubscription<String>? _noticeSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _noticeSub = ref
+        .read(authControllerProvider.notifier)
+        .notices
+        .listen((message) {
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _noticeSub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState.isLoading;
     final theme = Theme.of(context);
@@ -75,23 +110,6 @@ class LoginScreen extends ConsumerWidget {
                     icon: const Icon(Icons.person_outline),
                     label: const Text('Continue as Guest'),
                   ),
-                  if (authState.hasError) ...[
-                    const SizedBox(height: AppSpacing.lg),
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.errorContainer,
-                        borderRadius: AppRadius.smAll,
-                      ),
-                      child: Text(
-                        authState.error.toString(),
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onErrorContainer,
-                        ),
-                      ),
-                    ),
-                  ],
                   if (isLoading) ...[
                     const SizedBox(height: AppSpacing.xxl),
                     const Center(child: CircularProgressIndicator()),

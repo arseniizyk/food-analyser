@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../analysis/domain/analysis.dart';
+import '../domain/history_item.dart';
 
 class HistoryItemTile extends StatelessWidget {
   const HistoryItemTile({
-    required this.analysis,
+    required this.item,
     required this.onTap,
     super.key,
   });
 
-  final Analysis analysis;
+  final HistoryItem item;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = AppColors.scoreColor(analysis.score, context);
-    final date = (analysis.createdAt ?? DateTime.now()).toLocal();
+    final color = AppColors.scoreColor(item.score, context);
+    final date = item.createdAt.toLocal();
     final dateStr = '${date.day}/${date.month}/${date.year}';
 
     return Card(
@@ -43,7 +43,7 @@ class HistoryItemTile extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      analysis.score.toString(),
+                      item.score.toString(),
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: color,
                         fontWeight: FontWeight.w700,
@@ -58,7 +58,7 @@ class HistoryItemTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      analysis.barcode,
+                      item.barcode,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontFamily: 'monospace',
                         fontWeight: FontWeight.w600,
@@ -67,7 +67,7 @@ class HistoryItemTile extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
-                      AppColors.scoreLabel(analysis.score),
+                      AppColors.scoreLabel(item.score),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: color,
                         fontWeight: FontWeight.w500,

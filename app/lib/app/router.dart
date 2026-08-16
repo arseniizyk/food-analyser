@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/auth_controller.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/history/presentation/history_screen.dart';
+import '../features/profile/presentation/profile_screen.dart';
 import '../features/scan/presentation/barcode_scanner_screen.dart';
 import '../features/scan/presentation/ingredients_scan_screen.dart';
 import '../features/scan/presentation/scan_screen.dart';
@@ -64,6 +65,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/app/history',
                 builder: (context, state) => const HistoryScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/app/profile',
+                builder: (context, state) => const ProfileScreen(),
               ),
             ],
           ),

@@ -54,10 +54,11 @@ func (r *Repository) GetScans(ctx context.Context, userID string) ([]models.Scan
 		return nil, err
 	}
 
-	query, args, err := r.sb.Select("barcode, created_at").
-		From("user_scans").
-		Where(sq.Eq{"user_id": userID}).
-		OrderBy("created_at DESC").
+	query, args, err := r.sb.Select("s.barcode", "s.created_at", "COALESCE(a.score, 0)").
+		From("user_scans s").
+		Join("analyses a ON a.barcode = s.barcode").
+		Where(sq.Eq{"s.user_id": userID}).
+		OrderBy("s.created_at DESC").
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("build query scans: %w", err)
@@ -72,7 +73,7 @@ func (r *Repository) GetScans(ctx context.Context, userID string) ([]models.Scan
 	res := make([]models.Scan, 0)
 	for rows.Next() {
 		var scan models.Scan
-		if err := rows.Scan(&scan.Barcode, &scan.CreatedAt); err != nil {
+		if err := rows.Scan(&scan.Barcode, &scan.CreatedAt, &scan.Score); err != nil {
 			return nil, fmt.Errorf("scan row: %w", err)
 		}
 		res = append(res, scan)
