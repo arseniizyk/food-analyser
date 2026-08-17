@@ -6,10 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image/image.dart' as img;
 
 import '../../../core/camera/camera_permission_helper.dart';
 import '../../../core/camera/movable_selection_overlay.dart';
+import '../../../core/utils/image_processor.dart';
 import '../../analysis/presentation/analysis_result_bottom_sheet.dart';
 import '../domain/scan_session.dart';
 import 'scan_controller.dart';
@@ -228,41 +228,16 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
     await HapticFeedback.mediumImpact();
 
     try {
-      final bytes = await File(capturedImagePath).readAsBytes();
-      final image = img.decodeImage(bytes);
-      if (image == null) {
-        throw Exception('Failed to decode captured image.');
-      }
-
-      final cropX = (_cropRect.left * image.width).round().clamp(
-        0,
-        image.width - 1,
-      );
-      final cropY = (_cropRect.top * image.height).round().clamp(
-        0,
-        image.height - 1,
-      );
-      final cropW = (_cropRect.width * image.width).round().clamp(
-        1,
-        image.width - cropX,
-      );
-      final cropH = (_cropRect.height * image.height).round().clamp(
-        1,
-        image.height - cropY,
-      );
-      final cropped = img.copyCrop(
-        image,
-        x: cropX,
-        y: cropY,
-        width: cropW,
-        height: cropH,
+      final photo = await cropAndEncodePhoto(
+        imagePath: capturedImagePath,
+        cropRect: _cropRect,
       );
 
       final tempDir = Directory.systemTemp;
       final tempFile = File(
         '${tempDir.path}/scan_${DateTime.now().millisecondsSinceEpoch}.jpg',
       );
-      await tempFile.writeAsBytes(img.encodeJpg(cropped));
+      await tempFile.writeAsBytes(photo.bytes);
 
       await ref
           .read(scanControllerProvider.notifier)
@@ -346,6 +321,7 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
         showAnalysisResultBottomSheet(
           context: context,
           barcode: analysis.barcode,
+          analysis: analysis,
           onScanAnother: () {
             Navigator.of(context).pop();
             ref.read(scanControllerProvider.notifier).reset();
@@ -423,6 +399,10 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
                       child: Image.file(
                         File(_capturedImagePath!),
                         fit: BoxFit.cover,
+                        cacheWidth:
+                            (MediaQuery.sizeOf(context).width *
+                                    MediaQuery.devicePixelRatioOf(context))
+                                .round(),
                       ),
                     ),
                   if (hasCapturedImage)

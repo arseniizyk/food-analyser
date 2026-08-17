@@ -172,87 +172,89 @@ class _MovableSelectionOverlayState extends State<MovableSelectionOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    return Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerDown: _onPointerDown,
-      onPointerMove: _onPointerMove,
-      onPointerUp: _onPointerUp,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final newSize = Size(constraints.maxWidth, constraints.maxHeight);
-          final sizeChanged = _parentSize != newSize;
-          _parentSize = newSize;
+    return RepaintBoundary(
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: _onPointerDown,
+        onPointerMove: _onPointerMove,
+        onPointerUp: _onPointerUp,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final newSize = Size(constraints.maxWidth, constraints.maxHeight);
+            final sizeChanged = _parentSize != newSize;
+            _parentSize = newSize;
 
-          // Пропускаем отрисовку, если контейнер еще не имеет размеров
-          if (_parentSize.width <= 0 || _parentSize.height <= 0) {
-            return const SizedBox.shrink();
-          }
+            // Пропускаем отрисовку, если контейнер еще не имеет размеров
+            if (_parentSize.width <= 0 || _parentSize.height <= 0) {
+              return const SizedBox.shrink();
+            }
 
-          // Переизлучаем координаты при первом кадре или при изменении размера экрана
-          if (!_initialEmitted || sizeChanged) {
-            _initialEmitted = true;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) _emitChange();
-            });
-          }
+            // Переизлучаем координаты при первом кадре или при изменении размера экрана
+            if (!_initialEmitted || sizeChanged) {
+              _initialEmitted = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) _emitChange();
+              });
+            }
 
-          final f = _frameRect;
+            final f = _frameRect;
 
-          return Stack(
-            children: [
-              CustomPaint(
-                size: _parentSize,
-                painter: _DimmerPainter(frameRect: f),
-              ),
-              Positioned(
-                left: f.left,
-                top: f.top,
-                width: f.width,
-                height: f.height,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white, width: 1.5),
+            return Stack(
+              children: [
+                CustomPaint(
+                  size: _parentSize,
+                  painter: _DimmerPainter(frameRect: f),
+                ),
+                Positioned(
+                  left: f.left,
+                  top: f.top,
+                  width: f.width,
+                  height: f.height,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
                   ),
                 ),
-              ),
-              for (final c in _allCorners)
-                Positioned(
-                  left: c.x < 0
-                      ? f.left - _handleRadius
-                      : f.right - _handleRadius,
-                  top: c.y < 0
-                      ? f.top - _handleRadius
-                      : f.bottom - _handleRadius,
-                  child: SizedBox(
-                    width: _handleRadius * 2,
-                    height: _handleRadius * 2,
-                    child: Center(
-                      child: Container(
-                        width: 20,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.black54, width: 1),
+                for (final c in _allCorners)
+                  Positioned(
+                    left: c.x < 0
+                        ? f.left - _handleRadius
+                        : f.right - _handleRadius,
+                    top: c.y < 0
+                        ? f.top - _handleRadius
+                        : f.bottom - _handleRadius,
+                    child: SizedBox(
+                      width: _handleRadius * 2,
+                      height: _handleRadius * 2,
+                      child: Center(
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.black54, width: 1),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              // const Positioned(
-              //   left: 12,
-              //   right: 12,
-              //   bottom: 12,
-              //   child: Text(
-              //     'Drag the frame to select the ingredients area',
-              //     textAlign: TextAlign.center,
-              //     style: TextStyle(color: Colors.white70),
-              //   ),
-              // ),
-            ],
-          );
-        },
+                // const Positioned(
+                //   left: 12,
+                //   right: 12,
+                //   bottom: 12,
+                //   child: Text(
+                //     'Drag the frame to select the ingredients area',
+                //     textAlign: TextAlign.center,
+                //     style: TextStyle(color: Colors.white70),
+                //   ),
+                // ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -266,17 +268,11 @@ class _DimmerPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = Colors.black.withValues(alpha: 0.52);
-    final full = Offset.zero & size;
-    canvas.drawPath(
-      Path.combine(
-        PathOperation.difference,
-        Path()..addRect(full),
-        Path()..addRRect(
-          RRect.fromRectAndRadius(frameRect, const Radius.circular(12)),
-        ),
-      ),
-      paint,
-    );
+    final path = Path()
+      ..fillType = PathFillType.evenOdd
+      ..addRect(Offset.zero & size)
+      ..addRRect(RRect.fromRectAndRadius(frameRect, const Radius.circular(12)));
+    canvas.drawPath(path, paint);
   }
 
   @override

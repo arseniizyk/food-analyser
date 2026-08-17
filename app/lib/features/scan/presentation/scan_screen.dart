@@ -34,6 +34,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         showAnalysisResultBottomSheet(
           context: context,
           barcode: analysis.barcode,
+          analysis: analysis,
           onScanAnother: () {
             ref.read(scanControllerProvider.notifier).reset();
             context.go('/app/scan');

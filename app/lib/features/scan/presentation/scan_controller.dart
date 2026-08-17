@@ -10,9 +10,7 @@ import '../domain/scan_repository.dart';
 import '../domain/scan_session.dart';
 
 final scanRepositoryProvider = Provider<ScanRepository>((ref) {
-  return ScanRepositoryImpl(
-    analysisRepository: ref.watch(analysisRepositoryProvider),
-  );
+  return ScanRepositoryImpl(analysisRepository: selectAnalysisRepository(ref));
 });
 
 final startScanSessionUseCaseProvider = Provider<StartScanSessionUseCase>(
