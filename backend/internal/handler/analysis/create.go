@@ -12,7 +12,7 @@ import (
 )
 
 func (h *Handler) Analyze(w http.ResponseWriter, r *http.Request, barcode string) {
-	ctx, cancel := context.WithTimeout(r.Context(), 1*time.Minute)
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Minute)
 	defer cancel()
 
 	file, _, err := r.FormFile("image")
