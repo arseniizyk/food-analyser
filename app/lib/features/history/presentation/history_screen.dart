@@ -22,7 +22,7 @@ class HistoryScreen extends ConsumerStatefulWidget {
 
 class _HistoryScreenState extends ConsumerState<HistoryScreen>
     with WidgetsBindingObserver {
-  static const _pollInterval = Duration(seconds: 10);
+  static const _pollInterval = Duration(seconds: 30);
 
   _HistoryFilter _filter = _HistoryFilter.all;
   Timer? _pollTimer;
@@ -99,21 +99,31 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
           return RefreshIndicator(
             onRefresh: () =>
                 ref.read(historyControllerProvider.notifier).refresh(),
-            child: ListView(
+            child: ListView.builder(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.screenPadding,
                 AppSpacing.sm,
                 AppSpacing.screenPadding,
                 AppSpacing.xxxl,
               ),
-              children: [
-                _FilterBar(
-                  selected: _filter,
-                  onSelected: (filter) => setState(() => _filter = filter),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                if (filteredItems.isEmpty)
-                  Padding(
+              itemCount: filteredItems.isEmpty ? 2 : filteredItems.length + 1,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _FilterBar(
+                        selected: _filter,
+                        onSelected: (filter) =>
+                            setState(() => _filter = filter),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                    ],
+                  );
+                }
+
+                if (filteredItems.isEmpty) {
+                  return Padding(
                     padding: const EdgeInsets.symmetric(
                       vertical: AppSpacing.xxxl,
                     ),
@@ -137,24 +147,24 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                         ],
                       ),
                     ),
-                  )
-                else
-                  ...filteredItems.map(
-                    (item) => Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: HistoryItemTile(
-                        item: item,
-                        onTap: () => showAnalysisResultBottomSheet(
-                          context: context,
-                          barcode: item.barcode,
-                          onScanAnother: () {
-                            context.go('/app/scan');
-                          },
-                        ),
-                      ),
+                  );
+                }
+
+                final item = filteredItems[index - 1];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: HistoryItemTile(
+                    item: item,
+                    onTap: () => showAnalysisResultBottomSheet(
+                      context: context,
+                      barcode: item.barcode,
+                      onScanAnother: () {
+                        context.go('/app/scan');
+                      },
                     ),
                   ),
-              ],
+                );
+              },
             ),
           );
         },

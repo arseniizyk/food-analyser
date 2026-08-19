@@ -6,13 +6,13 @@ import '../data/history_repository_impl.dart';
 import '../domain/history_item.dart';
 import '../domain/history_repository.dart';
 
-final historyRepositoryProvider = Provider<HistoryRepository>((ref) {
-  final user = ref.watch(authControllerProvider).value;
-  if (user == null || user.isGuest) {
-    return LocalHistoryRepository(ref.read(localStorageProvider));
-  }
-  return RemoteHistoryRepository(ref.read(apiClientProvider));
-});
+final remoteHistoryRepositoryProvider = Provider<HistoryRepository>(
+  (ref) => RemoteHistoryRepository(ref.read(apiClientProvider)),
+);
+
+final localHistoryRepositoryProvider = Provider<HistoryRepository>(
+  (ref) => LocalHistoryRepository(ref.read(localStorageProvider)),
+);
 
 final historyControllerProvider =
     AsyncNotifierProvider<HistoryController, List<HistoryItem>>(
@@ -23,7 +23,10 @@ class HistoryController extends AsyncNotifier<List<HistoryItem>> {
   @override
   Future<List<HistoryItem>> build() async {
     final user = ref.watch(authControllerProvider).value;
-    return ref.read(historyRepositoryProvider).getHistory(user?.id ?? '');
+    final repository = (user == null || user.isGuest)
+        ? ref.read(localHistoryRepositoryProvider)
+        : ref.read(remoteHistoryRepositoryProvider);
+    return repository.getHistory(user?.id ?? '');
   }
 
   Future<void> refresh() async {

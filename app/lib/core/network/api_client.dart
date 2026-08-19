@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 import 'api_error.dart';
+import 'json_isolate.dart';
 import '../storage/secure_storage.dart';
 
 abstract interface class ApiClient {
@@ -120,7 +121,7 @@ class HttpApiClient implements ApiClient {
       }
 
       final responseBody = await response.stream.bytesToString();
-      return jsonDecode(responseBody) as Map<String, Object?>;
+      return decodeJsonObject(responseBody);
     } on ApiError {
       rethrow;
     } catch (e) {
@@ -148,7 +149,7 @@ class HttpApiClient implements ApiClient {
         );
       }
 
-      return jsonDecode(response.body) as Map<String, Object?>?;
+      return decodeJsonObjectOrNull(response.body);
     } on ApiError {
       rethrow;
     } catch (e) {
@@ -173,14 +174,7 @@ class HttpApiClient implements ApiClient {
         );
       }
 
-      final decoded = jsonDecode(response.body);
-      if (decoded is! List) {
-        throw const ApiError('Не удалось получить историю');
-      }
-
-      return decoded
-          .whereType<Map<String, Object?>>()
-          .toList(growable: false);
+      return decodeJsonList(response.body);
     } on ApiError {
       rethrow;
     } catch (e) {

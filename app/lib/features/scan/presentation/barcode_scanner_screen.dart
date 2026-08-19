@@ -223,6 +223,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
         showAnalysisResultBottomSheet(
           context: context,
           barcode: analysis.barcode,
+          analysis: analysis,
           onScanAnother: () {
             Navigator.of(context).pop();
             ref.read(scanControllerProvider.notifier).reset();

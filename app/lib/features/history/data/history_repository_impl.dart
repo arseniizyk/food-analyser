@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../../../core/network/api_client.dart';
 import '../../../core/storage/local_storage.dart';
 import '../domain/history_item.dart';
@@ -11,7 +13,7 @@ class LocalHistoryRepository implements HistoryRepository {
   @override
   Future<List<HistoryItem>> getHistory(String userId) async {
     final json = await _localStorage.getHistory('');
-    return json.map(HistoryItem.fromJson).toList();
+    return _parseHistory(json);
   }
 }
 
@@ -23,6 +25,14 @@ class RemoteHistoryRepository implements HistoryRepository {
   @override
   Future<List<HistoryItem>> getHistory(String userId) async {
     final json = await _apiClient.getHistory();
-    return json.map(HistoryItem.fromJson).toList();
+    return _parseHistory(json);
   }
+}
+
+Future<List<HistoryItem>> _parseHistory(List<Map<String, Object?>> json) {
+  return compute(_parseHistoryItems, json);
+}
+
+List<HistoryItem> _parseHistoryItems(List<Map<String, Object?>> json) {
+  return json.map(HistoryItem.fromJson).toList(growable: false);
 }

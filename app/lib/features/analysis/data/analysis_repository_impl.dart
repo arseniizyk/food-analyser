@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../../../core/network/api_client.dart';
 import '../../../core/storage/local_storage.dart';
 import '../domain/analysis.dart';
@@ -20,13 +22,13 @@ class RemoteAnalysisRepository implements AnalysisRepository {
       imagePath: imagePath,
       userId: userId,
     );
-    return AnalysisDto.fromJson(json);
+    return _parseAnalysis(json);
   }
 
   @override
   Future<Analysis?> getByBarcode(String barcode) async {
     final json = await _apiClient.getAnalysisByBarcode(barcode);
-    return json == null ? null : AnalysisDto.fromJson(json);
+    return json == null ? null : _parseAnalysis(json);
   }
 }
 
@@ -52,7 +54,7 @@ class LocalAnalysisRepository implements AnalysisRepository {
       if (userId != null && userId.isNotEmpty) 'userId': userId,
     };
     await _localStorage.saveAnalysis(cached);
-    return AnalysisDto.fromJson(cached);
+    return _parseAnalysis(cached);
   }
 
   @override
@@ -60,6 +62,10 @@ class LocalAnalysisRepository implements AnalysisRepository {
     final json = await _apiClient.getAnalysisByBarcode(barcode);
     if (json == null) return null;
     await _localStorage.saveAnalysis(json);
-    return AnalysisDto.fromJson(json);
+    return _parseAnalysis(json);
   }
+}
+
+Future<Analysis> _parseAnalysis(Map<String, Object?> json) {
+  return compute(AnalysisDto.fromJson, json);
 }

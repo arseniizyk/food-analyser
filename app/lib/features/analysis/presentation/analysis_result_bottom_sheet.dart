@@ -10,6 +10,7 @@ import 'analysis_controller.dart';
 Future<void> showAnalysisResultBottomSheet({
   required BuildContext context,
   required String barcode,
+  Analysis? analysis,
   VoidCallback? onScanAnother,
 }) {
   return showModalBottomSheet<void>(
@@ -20,6 +21,7 @@ Future<void> showAnalysisResultBottomSheet({
     builder: (context) {
       return AnalysisResultBottomSheet(
         barcode: barcode,
+        initialAnalysis: analysis,
         onScanAnother: onScanAnother,
       );
     },
@@ -29,15 +31,28 @@ Future<void> showAnalysisResultBottomSheet({
 class AnalysisResultBottomSheet extends ConsumerWidget {
   const AnalysisResultBottomSheet({
     required this.barcode,
+    this.initialAnalysis,
     this.onScanAnother,
     super.key,
   });
 
   final String barcode;
+  final Analysis? initialAnalysis;
   final VoidCallback? onScanAnother;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final initialAnalysis = this.initialAnalysis;
+    if (initialAnalysis != null) {
+      return SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.88,
+        child: _ResultBody(
+          analysis: initialAnalysis,
+          onScanAnother: onScanAnother,
+        ),
+      );
+    }
+
     final analysisState = ref.watch(analysisControllerProvider(barcode));
 
     return SizedBox(
@@ -68,104 +83,202 @@ class _ResultBody extends StatelessWidget {
     final theme = Theme.of(context);
     final color = AppColors.scoreColor(analysis.score, context);
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenPadding,
-            0,
-            AppSpacing.lg,
-            AppSpacing.md,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Analysis result',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      'Barcode ${analysis.barcode}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                tooltip: 'Close',
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: ListView(
+    final items = <_ResultItem>[
+      _ScoreItem(score: analysis.score, color: color),
+      const _SpaceItem(height: AppSpacing.xl),
+      const _HeaderItem(title: 'Summary'),
+      const _SpaceItem(height: AppSpacing.sm),
+      ...analysis.summary.map((item) => _SummaryItem(item: item)),
+      const _SpaceItem(height: AppSpacing.lg),
+      const _HeaderItem(title: 'Ingredient risks'),
+      const _SpaceItem(height: AppSpacing.sm),
+      if (analysis.risks.isEmpty)
+        const _NoRisksItem()
+      else
+        ...analysis.risks.map((risk) => _RiskItem(risk: risk)),
+      const _SpaceItem(height: AppSpacing.lg),
+      const _HeaderItem(title: 'Ingredients'),
+      const _SpaceItem(height: AppSpacing.sm),
+      ...analysis.ingredients.map(
+        (ingredient) => _IngredientItem(ingredient: ingredient),
+      ),
+      const _SpaceItem(height: AppSpacing.xxl),
+      _ScanAnotherItem(onScanAnother: onScanAnother),
+    ];
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+      child: Column(
+        children: [
+          Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.screenPadding,
               0,
-              AppSpacing.screenPadding,
-              AppSpacing.screenPadding,
+              AppSpacing.lg,
+              AppSpacing.md,
             ),
-            children: [
-              _ScoreCard(score: analysis.score, color: color),
-              const SizedBox(height: AppSpacing.xl),
-              _SectionHeader(title: 'Summary'),
-              const SizedBox(height: AppSpacing.sm),
-              ...analysis.summary.map(
-                (item) => Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                  child: Row(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.check_circle, size: 18, color: AppColors.good),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Text(
-                          item.message,
-                          style: theme.textTheme.bodyMedium,
+                      Text(
+                        'Analysis result',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Barcode ${analysis.barcode}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              _SectionHeader(title: 'Ingredient risks'),
-              const SizedBox(height: AppSpacing.sm),
-              if (analysis.risks.isEmpty)
-                _NoRisksBanner()
-              else
-                ...analysis.risks.map((risk) => _RiskTile(risk: risk)),
-              const SizedBox(height: AppSpacing.lg),
-              _SectionHeader(title: 'Ingredients'),
-              const SizedBox(height: AppSpacing.sm),
-              ...analysis.ingredients.map(
-                (ingredient) => _IngredientTile(ingredient: ingredient),
-              ),
-              const SizedBox(height: AppSpacing.xxl),
-              FilledButton.icon(
-                onPressed: onScanAnother != null
-                    ? () {
-                        Navigator.of(context).pop();
-                        onScanAnother!();
-                      }
-                    : null,
-                icon: const Icon(Icons.qr_code_scanner),
-                label: const Text('Scan another product'),
-              ),
-            ],
+                IconButton(
+                  tooltip: 'Close',
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+          Expanded(
+            child: Theme(
+              data: theme.copyWith(dividerColor: Colors.transparent),
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screenPadding,
+                  0,
+                  AppSpacing.screenPadding,
+                  AppSpacing.screenPadding,
+                ),
+                itemCount: items.length,
+                itemBuilder: (context, index) => items[index].build(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, AppSpacing.sm * (1 - value)),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+}
+
+sealed class _ResultItem {
+  const _ResultItem();
+
+  Widget build(BuildContext context);
+}
+
+class _SpaceItem extends _ResultItem {
+  const _SpaceItem({required this.height});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(height: height);
+}
+
+class _HeaderItem extends _ResultItem {
+  const _HeaderItem({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => _SectionHeader(title: title);
+}
+
+class _ScoreItem extends _ResultItem {
+  const _ScoreItem({required this.score, required this.color});
+
+  final int score;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => _ScoreCard(score: score, color: color);
+}
+
+class _SummaryItem extends _ResultItem {
+  const _SummaryItem({required this.item});
+
+  final SummaryItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.check_circle, size: 18, color: AppColors.good),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(item.message, style: theme.textTheme.bodyMedium),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RiskItem extends _ResultItem {
+  const _RiskItem({required this.risk});
+
+  final Risk risk;
+
+  @override
+  Widget build(BuildContext context) => _RiskTile(risk: risk);
+}
+
+class _IngredientItem extends _ResultItem {
+  const _IngredientItem({required this.ingredient});
+
+  final Ingredient ingredient;
+
+  @override
+  Widget build(BuildContext context) => _IngredientTile(ingredient: ingredient);
+}
+
+class _NoRisksItem extends _ResultItem {
+  const _NoRisksItem();
+
+  @override
+  Widget build(BuildContext context) => const _NoRisksBanner();
+}
+
+class _ScanAnotherItem extends _ResultItem {
+  const _ScanAnotherItem({required this.onScanAnother});
+
+  final VoidCallback? onScanAnother;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton.icon(
+      onPressed: onScanAnother != null
+          ? () {
+              Navigator.of(context).pop();
+              onScanAnother!();
+            }
+          : null,
+      icon: const Icon(Icons.qr_code_scanner),
+      label: const Text('Scan another product'),
     );
   }
 }
@@ -187,57 +300,64 @@ class _ScoreCard extends StatelessWidget {
         borderRadius: AppRadius.lgAll,
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 72,
-            height: 72,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 72,
-                  height: 72,
-                  child: CircularProgressIndicator(
-                    value: score / 100,
-                    strokeWidth: 6,
-                    backgroundColor: color.withValues(alpha: 0.15),
-                    valueColor: AlwaysStoppedAnimation<Color>(color),
-                    strokeCap: StrokeCap.round,
-                  ),
+      child: TweenAnimationBuilder<int>(
+        tween: IntTween(begin: 0, end: score),
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutCubic,
+        builder: (context, value, _) {
+          return Row(
+            children: [
+              SizedBox(
+                width: 72,
+                height: 72,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 72,
+                      height: 72,
+                      child: CircularProgressIndicator(
+                        value: value / 100,
+                        strokeWidth: 6,
+                        backgroundColor: color.withValues(alpha: 0.15),
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                        strokeCap: StrokeCap.round,
+                      ),
+                    ),
+                    Text(
+                      value.toString(),
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  score.toString(),
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w800,
-                  ),
+              ),
+              const SizedBox(width: AppSpacing.xl),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppColors.scoreLabel(score),
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Health score: $value/100',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: AppSpacing.xl),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppColors.scoreLabel(score),
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'Health score: $score/100',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -260,6 +380,8 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _NoRisksBanner extends StatelessWidget {
+  const _NoRisksBanner();
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -306,8 +428,8 @@ class _RiskTile extends StatelessWidget {
         borderRadius: AppRadius.mdAll,
         border: Border.all(color: riskColor.withValues(alpha: 0.15)),
       ),
-      child: Theme(
-        data: theme.copyWith(dividerColor: Colors.transparent),
+      child: Material(
+        type: MaterialType.transparency,
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
@@ -341,7 +463,10 @@ class _RiskTile extends StatelessWidget {
           children: [
             Align(
               alignment: Alignment.centerLeft,
-              child: Text(risk.description, style: theme.textTheme.bodyMedium),
+              child: Text(
+                risk.description,
+                style: theme.textTheme.bodyMedium,
+              ),
             ),
           ],
         ),

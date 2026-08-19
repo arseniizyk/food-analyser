@@ -6,16 +6,24 @@ import '../data/analysis_repository_impl.dart';
 import '../domain/analysis.dart';
 import '../domain/analysis_repository.dart';
 
-final analysisRepositoryProvider = Provider<AnalysisRepository>((ref) {
-  final user = ref.watch(authControllerProvider).value;
-  final apiClient = ref.read(apiClientProvider);
+final remoteAnalysisRepositoryProvider = Provider<AnalysisRepository>(
+  (ref) => RemoteAnalysisRepository(ref.read(apiClientProvider)),
+);
 
+final localAnalysisRepositoryProvider = Provider<AnalysisRepository>(
+  (ref) => LocalAnalysisRepository(
+    ref.read(localStorageProvider),
+    ref.read(apiClientProvider),
+  ),
+);
+
+AnalysisRepository selectAnalysisRepository(Ref ref) {
+  final user = ref.read(authControllerProvider).value;
   if (user == null || user.isGuest) {
-    return LocalAnalysisRepository(ref.read(localStorageProvider), apiClient);
+    return ref.read(localAnalysisRepositoryProvider);
   }
-
-  return RemoteAnalysisRepository(apiClient);
-});
+  return ref.read(remoteAnalysisRepositoryProvider);
+}
 
 final analysisControllerProvider =
     AsyncNotifierProvider.family<AnalysisController, Analysis?, String>(
@@ -29,6 +37,6 @@ class AnalysisController extends AsyncNotifier<Analysis?> {
 
   @override
   Future<Analysis?> build() {
-    return ref.read(analysisRepositoryProvider).getByBarcode(barcode);
+    return selectAnalysisRepository(ref).getByBarcode(barcode);
   }
 }
