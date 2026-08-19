@@ -72,19 +72,48 @@ class AnalysisResultBottomSheet extends ConsumerWidget {
   }
 }
 
-class _ResultBody extends StatelessWidget {
+class _ResultBody extends StatefulWidget {
   const _ResultBody({required this.analysis, required this.onScanAnother});
 
   final Analysis analysis;
   final VoidCallback? onScanAnother;
 
   @override
+  State<_ResultBody> createState() => _ResultBodyState();
+}
+
+class _ResultBodyState extends State<_ResultBody>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _scoreController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 700),
+  )..forward();
+
+  late final CurvedAnimation _scoreAnimation = CurvedAnimation(
+    parent: _scoreController,
+    curve: Curves.easeOutCubic,
+  );
+
+  @override
+  void dispose() {
+    _scoreAnimation.dispose();
+    _scoreController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final analysis = widget.analysis;
+    final onScanAnother = widget.onScanAnother;
     final color = AppColors.scoreColor(analysis.score, context);
 
     final items = <_ResultItem>[
-      _ScoreItem(score: analysis.score, color: color),
+      _ScoreItem(
+        score: analysis.score,
+        color: color,
+        animation: _scoreAnimation,
+      ),
       const _SpaceItem(height: AppSpacing.xl),
       const _HeaderItem(title: 'Summary'),
       const _SpaceItem(height: AppSpacing.sm),
@@ -204,13 +233,19 @@ class _HeaderItem extends _ResultItem {
 }
 
 class _ScoreItem extends _ResultItem {
-  const _ScoreItem({required this.score, required this.color});
+  const _ScoreItem({
+    required this.score,
+    required this.color,
+    required this.animation,
+  });
 
   final int score;
   final Color color;
+  final Animation<double> animation;
 
   @override
-  Widget build(BuildContext context) => _ScoreCard(score: score, color: color);
+  Widget build(BuildContext context) =>
+      _ScoreCard(score: score, color: color, animation: animation);
 }
 
 class _SummaryText extends _ResultItem {
@@ -229,9 +264,7 @@ class _SummaryText extends _ResultItem {
         children: [
           const Icon(Icons.check_circle, size: 18, color: AppColors.good),
           const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(item, style: theme.textTheme.bodyMedium),
-          ),
+          Expanded(child: Text(item, style: theme.textTheme.bodyMedium)),
         ],
       ),
     );
@@ -284,10 +317,15 @@ class _ScanAnotherItem extends _ResultItem {
 }
 
 class _ScoreCard extends StatelessWidget {
-  const _ScoreCard({required this.score, required this.color});
+  const _ScoreCard({
+    required this.score,
+    required this.color,
+    required this.animation,
+  });
 
   final int score;
   final Color color;
+  final Animation<double> animation;
 
   @override
   Widget build(BuildContext context) {
@@ -300,11 +338,10 @@ class _ScoreCard extends StatelessWidget {
         borderRadius: AppRadius.lgAll,
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
-      child: TweenAnimationBuilder<int>(
-        tween: IntTween(begin: 0, end: score),
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOutCubic,
-        builder: (context, value, _) {
+      child: AnimatedBuilder(
+        animation: animation,
+        builder: (context, _) {
+          final value = (score * animation.value).round();
           return Row(
             children: [
               SizedBox(
@@ -463,10 +500,7 @@ class _RiskTile extends StatelessWidget {
           children: [
             Align(
               alignment: Alignment.centerLeft,
-              child: Text(
-                risk.description,
-                style: theme.textTheme.bodyMedium,
-              ),
+              child: Text(risk.description, style: theme.textTheme.bodyMedium),
             ),
           ],
         ),
