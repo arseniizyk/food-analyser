@@ -22,6 +22,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       if (ModalRoute.of(context)?.isCurrent != true) {
         return;
       }
+      if (next.isLoading) {
+        return;
+      }
 
       final session = next.value;
       final analysis = session?.analysis;
