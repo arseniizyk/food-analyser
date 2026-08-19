@@ -38,6 +38,8 @@ class FakeAuthRepository implements AuthRepository {
 class FakeScanRepository implements ScanRepository {
   final List<String> startedBarcodes = [];
   final List<ScanSession> analyzedSessions = [];
+  Completer<void>? startGate;
+  Completer<void>? analyzeGate;
 
   @override
   Future<ScanSession> startByBarcode({
@@ -45,6 +47,8 @@ class FakeScanRepository implements ScanRepository {
     required String userId,
   }) async {
     startedBarcodes.add(barcode);
+    final gate = startGate;
+    if (gate != null) await gate.future;
     return ScanSession(
       id: 'scan-$barcode',
       barcode: barcode,
@@ -62,6 +66,8 @@ class FakeScanRepository implements ScanRepository {
     required String imagePath,
   }) async {
     analyzedSessions.add(session);
+    final gate = analyzeGate;
+    if (gate != null) await gate.future;
     return session.copyWith(
       ingredientsImagePath: imagePath,
       analysis: Analysis(
@@ -137,6 +143,68 @@ void main() {
     expect(state.hasError, isTrue);
     expect(state.error.toString(), contains('Invalid barcode format'));
   });
+
+  test(
+    'scanBarcode does not retain the previous session while loading',
+    () async {
+      await container.read(authControllerProvider.future);
+      final notifier = container.read(scanControllerProvider.notifier);
+
+      await notifier.scanBarcode('460000000001');
+      expect(
+        container.read(scanControllerProvider).value!.barcode,
+        '460000000001',
+      );
+
+      final gate = Completer<void>();
+      scanRepository.startGate = gate;
+
+      final scanFuture = notifier.scanBarcode('460000000002');
+      final loading = container.read(scanControllerProvider);
+
+      expect(loading.isLoading, isTrue);
+      expect(loading.value, isNull);
+
+      gate.complete();
+      await scanFuture;
+
+      expect(
+        container.read(scanControllerProvider).value!.barcode,
+        '460000000002',
+      );
+    },
+  );
+
+  test(
+    'scanIngredients does not retain the previous session while loading',
+    () async {
+      await container.read(authControllerProvider.future);
+      final notifier = container.read(scanControllerProvider.notifier);
+
+      await notifier.scanBarcode('460000000001');
+      final session = container.read(scanControllerProvider).value!;
+
+      final gate = Completer<void>();
+      scanRepository.analyzeGate = gate;
+
+      final scanFuture = notifier.scanIngredients(
+        imagePath: 'photo.jpg',
+        sessionId: session.id,
+      );
+      final loading = container.read(scanControllerProvider);
+
+      expect(loading.isLoading, isTrue);
+      expect(loading.value, isNull);
+
+      gate.complete();
+      await scanFuture;
+
+      expect(
+        container.read(scanControllerProvider).value!.step,
+        ScanStep.completed,
+      );
+    },
+  );
 
   test('scanIngredients fails when the session is unknown', () async {
     await container.read(authControllerProvider.future);

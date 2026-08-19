@@ -9,16 +9,11 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/invopop/jsonschema"
-
 	"github.com/arseniizyk/food-analyser/backend/internal/config"
 	"github.com/arseniizyk/food-analyser/backend/internal/models"
 )
 
-var analysisSchema = func() any {
-	r := new(jsonschema.Reflector)
-	return r.Reflect(&AnalysisResponse{})
-}()
+var analysisSchema = models.GenerateAnalysisSchema()
 
 type Service struct {
 	cfg    *config.LLMConfig
@@ -29,7 +24,7 @@ type Service struct {
 func New(logger *slog.Logger, cfg config.LLMConfig) *Service {
 	return &Service{
 		cfg:    &cfg,
-		client: &http.Client{},
+		client: &http.Client{Timeout: cfg.Timeout},
 		logger: logger,
 	}
 }

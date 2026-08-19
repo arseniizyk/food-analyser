@@ -9,7 +9,7 @@ final _analysis = Analysis(
   barcode: '460000000001',
   score: 85,
   grade: GradeLevel.good,
-  summary: const [SummaryItem(message: 'Composition looks balanced.')],
+  summary: const ['Composition looks balanced.'],
   risks: const [
     Risk(
       title: 'Added sugar',
@@ -21,9 +21,7 @@ final _analysis = Analysis(
     for (var i = 0; i < 15; i++)
       Ingredient(
         name: 'Ingredient $i',
-        risk: i.isEven
-            ? IngredientRiskLevel.safe
-            : IngredientRiskLevel.caution,
+        risk: i.isEven ? IngredientRiskLevel.safe : IngredientRiskLevel.caution,
       ),
   ],
 );
@@ -117,5 +115,25 @@ void main() {
       scrollable: find.byType(Scrollable).last,
     );
     expect(find.text('Ingredient 14'), findsOneWidget);
+  });
+
+  testWidgets('score animation does not restart after scrolling back', (
+    tester,
+  ) async {
+    await _pumpSheet(tester, initialAnalysis: _analysis);
+
+    expect(find.text('85'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Ingredient 14'),
+      400,
+      scrollable: find.byType(Scrollable).last,
+    );
+
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, 3000));
+    await tester.pump();
+
+    expect(find.text('85'), findsOneWidget);
+    expect(find.text('0'), findsNothing);
   });
 }

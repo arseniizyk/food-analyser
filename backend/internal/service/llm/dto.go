@@ -33,11 +33,11 @@ type JSONSchema struct {
 }
 
 type AnalysisResponse struct {
-	Score       int                  `json:"score"`
-	Grade       models.GradeLevel    `json:"grade"`
-	Summary     []models.SummaryItem `json:"summary"`
-	Risks       []models.Risk        `json:"risks"`
-	Ingredients []models.Ingredient  `json:"ingredients"`
+	Score       int                 `json:"score"`
+	Grade       models.GradeLevel   `json:"grade"`
+	Summary     []string            `json:"summary"`
+	Risks       []models.Risk       `json:"risks"`
+	Ingredients []models.Ingredient `json:"ingredients"`
 }
 
 func analysisToModel(resp *AnalysisResponse) *models.Analysis {

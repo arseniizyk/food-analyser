@@ -46,3 +46,6 @@ bin
 .claude
 /backend/migrate.exe
 .ruff_cache/
+
+# Dev tooling
+/dev/*

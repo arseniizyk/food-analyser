@@ -196,14 +196,6 @@ components:
         message:
           type: string
           description: Описание ошибки
-    summary_item:
-      type: object
-      required:
-        - message
-      properties:
-        message:
-          type: string
-          example: Composition looks balanced.
     risk:
       type: object
       required:
@@ -270,7 +262,8 @@ components:
         summary:
           type: array
           items:
-            $ref: '#/components/schemas/summary_item'
+            type: string
+            example: Composition looks balanced.
         risks:
           type: array
           items:

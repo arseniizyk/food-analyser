@@ -198,6 +198,9 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
       if (ModalRoute.of(context)?.isCurrent != true) {
         return;
       }
+      if (next.isLoading) {
+        return;
+      }
 
       final session = next.value;
       final analysis = session?.analysis;

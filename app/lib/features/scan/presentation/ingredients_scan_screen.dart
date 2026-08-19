@@ -301,6 +301,7 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
   Widget build(BuildContext context) {
     ref.listen(scanControllerProvider, (previous, next) {
       if (ModalRoute.of(context)?.isCurrent != true) return;
+      if (next.isLoading) return;
 
       final session = next.value;
       final analysis = session?.analysis;

@@ -44,6 +44,7 @@ class ScanController extends AsyncNotifier<ScanSession?> {
       return;
     }
 
+    state = const AsyncData(null);
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final session = await ref
@@ -72,6 +73,7 @@ class ScanController extends AsyncNotifier<ScanSession?> {
     final user = ref.read(authControllerProvider).value;
     final userId = (user == null || user.isGuest) ? null : user.id;
 
+    state = const AsyncData(null);
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       final updatedSession = await ref

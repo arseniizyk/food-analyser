@@ -28,6 +28,17 @@ services:
         env_file: .env
         environment:
             ML_PORT: ${ML_PORT}
+            OCR_DEVICE: gpu:0
+        shm_size: '4gb'
+        volumes:
+            - ml_models:/root/.paddlex
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          count: 1
+                          capabilities: [gpu]
         ports:
             - '${ML_PORT}:${ML_PORT}'
         healthcheck:
@@ -41,7 +52,7 @@ services:
             interval: 30s
             timeout: 20s
             retries: 5
-            start_period: 30s
+            start_period: 60s
         networks:
             - internal
 
@@ -92,3 +103,4 @@ networks:
 
 volumes:
     postgres_data:
+    ml_models:

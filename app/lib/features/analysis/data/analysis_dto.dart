@@ -25,14 +25,7 @@ class AnalysisDto {
       'barcode': analysis.barcode,
       'score': analysis.score,
       'grade': analysis.grade.name,
-      'summary': analysis.summary
-          .map(
-            (item) => {
-              'message': item.message,
-              if (item.code != null) 'code': item.code,
-            },
-          )
-          .toList(),
+      'summary': analysis.summary,
       'risks': analysis.risks
           .map(
             (risk) => {
@@ -66,16 +59,16 @@ class AnalysisDto {
     return GradeLevel.average;
   }
 
-  static List<SummaryItem> _parseSummary(Object? value) {
+  static List<String> _parseSummary(Object? value) {
     if (value is! List) return [];
-    final results = <SummaryItem>[];
+    final results = <String>[];
     for (final item in value) {
-      if (item is Map<String, Object?>) {
+      if (item is String && item.isNotEmpty) {
+        results.add(item);
+      } else if (item is Map<String, Object?>) {
         final message = item['message'] as String?;
         if (message != null && message.isNotEmpty) {
-          results.add(
-            SummaryItem(message: message, code: item['code'] as String?),
-          );
+          results.add(message);
         }
       }
     }

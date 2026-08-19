@@ -12,20 +12,13 @@ class Analysis {
   final String barcode;
   final int score;
   final GradeLevel grade;
-  final List<SummaryItem> summary;
+  final List<String> summary;
   final List<Risk> risks;
   final List<Ingredient> ingredients;
 
   /// Local-only timestamp used for history sorting and display.
   /// Not part of the backend response; defaults to the moment of parsing.
   final DateTime? createdAt;
-}
-
-class SummaryItem {
-  const SummaryItem({required this.message, this.code});
-
-  final String message;
-  final String? code;
 }
 
 class Risk {
