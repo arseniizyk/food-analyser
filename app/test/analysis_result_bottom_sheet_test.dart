@@ -9,7 +9,7 @@ final _analysis = Analysis(
   barcode: '460000000001',
   score: 85,
   grade: GradeLevel.good,
-  summary: const [SummaryItem(message: 'Composition looks balanced.')],
+  summary: const ['Composition looks balanced.'],
   risks: const [
     Risk(
       title: 'Added sugar',

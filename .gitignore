@@ -48,5 +48,4 @@ bin
 .ruff_cache/
 
 # Dev tooling
-/dev/images/
-/dev/out/
+/dev/*

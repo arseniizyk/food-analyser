@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -87,7 +88,7 @@ class HttpApiClient implements ApiClient {
       request.headers.addAll(headers);
 
       final response = await request.send().timeout(
-        const Duration(seconds: 60),
+        const Duration(minutes: 5),
       );
 
       if (response.statusCode != 200) {
@@ -104,6 +105,12 @@ class HttpApiClient implements ApiClient {
               response.statusCode,
               body,
               'Сервис распознавания временно недоступен',
+            );
+          case 504:
+            _throwApiError(
+              response.statusCode,
+              body,
+              'Сервис отвечает слишком долго, попробуйте позже',
             );
           case 500:
             _throwApiError(
@@ -124,6 +131,8 @@ class HttpApiClient implements ApiClient {
       return decodeJsonObject(responseBody);
     } on ApiError {
       rethrow;
+    } on TimeoutException {
+      throw ApiError('Сервис отвечает слишком долго, попробуйте позже');
     } catch (e) {
       throw ApiError('Не удалось распознать текст');
     }

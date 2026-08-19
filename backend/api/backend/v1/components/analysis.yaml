@@ -26,7 +26,8 @@ properties:
   summary:
     type: array
     items:
-      $ref: ./summary_item.yaml
+      type: string
+      example: Composition looks balanced.
   risks:
     type: array
     items:

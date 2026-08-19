@@ -10,8 +10,8 @@ void main() {
       'score': 85,
       'grade': 'good',
       'summary': [
-        {'message': 'Composition looks balanced.'},
-        {'code': 'balanced_composition', 'message': 'No major risks detected.'},
+        'Composition looks balanced.',
+        'No major risks detected.',
       ],
       'risks': [
         {
@@ -33,8 +33,8 @@ void main() {
     expect(decoded.score, 85);
     expect(decoded.grade, GradeLevel.good);
     expect(decoded.summary, hasLength(2));
-    expect(decoded.summary.first.message, 'Composition looks balanced.');
-    expect(decoded.summary.last.code, 'balanced_composition');
+    expect(decoded.summary.first, 'Composition looks balanced.');
+    expect(decoded.summary.last, 'No major risks detected.');
     expect(decoded.risks, hasLength(1));
     expect(decoded.risks.first.severity, RiskLevel.high);
     expect(decoded.risks.first.title, 'High sugar');
@@ -59,8 +59,10 @@ void main() {
   test('AnalysisDto skips malformed summary, risk and ingredient entries', () {
     final analysis = AnalysisDto.fromJson(<String, Object?>{
       'summary': [
-        'plain string',
+        'Valid point',
+        '',
         {'message': ''},
+        42,
       ],
       'risks': [
         'plain string',
@@ -72,7 +74,7 @@ void main() {
       ],
     });
 
-    expect(analysis.summary, isEmpty);
+    expect(analysis.summary, ['Valid point']);
     expect(analysis.risks, hasLength(1));
     expect(analysis.risks.first.title, 'Valid risk');
     expect(analysis.ingredients, hasLength(1));
@@ -84,7 +86,7 @@ void main() {
       barcode: '460000000001',
       score: 86,
       grade: GradeLevel.good,
-      summary: const [SummaryItem(message: 'Composition looks balanced.')],
+      summary: const ['Composition looks balanced.'],
       risks: const [],
       ingredients: const [
         Ingredient(name: 'Oats', risk: IngredientRiskLevel.safe),

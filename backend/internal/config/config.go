@@ -21,10 +21,11 @@ type Config struct {
 type HTTPConfig struct {
 	Port              int           `env:"PORT" env-default:"8000"`
 	Host              string        `env:"HOST" env-default:"localhost"`
-	WriteTimeout      time.Duration `env:"WRITE_TIMEOUT" env-default:"5s"`
-	ReadTimeout       time.Duration `env:"READ_TIMEOUT" env-default:"5s"`
-	ReadHeaderTimeout time.Duration `env:"READ_HEADER_TIMEOUT" env-default:"5s"`
-	IdleTimeout       time.Duration `env:"IDLE_TIMEOUT" env-default:"5s"`
+	WriteTimeout      time.Duration `env:"WRITE_TIMEOUT" env-default:"5m"`
+	ReadTimeout       time.Duration `env:"READ_TIMEOUT" env-default:"5m"`
+	ReadHeaderTimeout time.Duration `env:"READ_HEADER_TIMEOUT" env-default:"2m"`
+	IdleTimeout       time.Duration `env:"IDLE_TIMEOUT" env-default:"2m"`
+	RequestTimeout    time.Duration `env:"REQUEST_TIMEOUT" env-default:"5m"`
 }
 
 type PostgresConfig struct {
@@ -43,13 +44,14 @@ type PostgresConfig struct {
 type MLConfig struct {
 	Port    int           `env:"PORT" env-default:"8888"`
 	Host    string        `env:"HOST" env-default:"localhost"`
-	Timeout time.Duration `env:"TIMEOUT" env-default:"10s"`
+	Timeout time.Duration `env:"TIMEOUT" env-default:"3m"`
 }
 
 type LLMConfig struct {
-	APIKey string `env:"API_KEY" env-required:"true"`
-	URL    string `env:"URL" env-required:"true"`
-	Model  string `env:"MODEL" env-required:"true"`
+	APIKey  string        `env:"API_KEY" env-required:"true"`
+	URL     string        `env:"URL" env-required:"true"`
+	Model   string        `env:"MODEL" env-required:"true"`
+	Timeout time.Duration `env:"TIMEOUT" env-default:"2m"`
 }
 
 type GoogleConfig struct {

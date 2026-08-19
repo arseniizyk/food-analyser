@@ -37,7 +37,7 @@ void main() {
     'score': 85,
     'grade': 'good',
     'summary': [
-      {'message': 'Composition looks balanced.'},
+      'Composition looks balanced.',
     ],
     'risks': <Object?>[],
     'ingredients': <Object?>[

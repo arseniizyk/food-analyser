@@ -88,7 +88,7 @@ class _ResultBody extends StatelessWidget {
       const _SpaceItem(height: AppSpacing.xl),
       const _HeaderItem(title: 'Summary'),
       const _SpaceItem(height: AppSpacing.sm),
-      ...analysis.summary.map((item) => _SummaryItem(item: item)),
+      ...analysis.summary.map((item) => _SummaryText(item: item)),
       const _SpaceItem(height: AppSpacing.lg),
       const _HeaderItem(title: 'Ingredient risks'),
       const _SpaceItem(height: AppSpacing.sm),
@@ -213,10 +213,10 @@ class _ScoreItem extends _ResultItem {
   Widget build(BuildContext context) => _ScoreCard(score: score, color: color);
 }
 
-class _SummaryItem extends _ResultItem {
-  const _SummaryItem({required this.item});
+class _SummaryText extends _ResultItem {
+  const _SummaryText({required this.item});
 
-  final SummaryItem item;
+  final String item;
 
   @override
   Widget build(BuildContext context) {
@@ -230,7 +230,7 @@ class _SummaryItem extends _ResultItem {
           const Icon(Icons.check_circle, size: 18, color: AppColors.good),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Text(item.message, style: theme.textTheme.bodyMedium),
+            child: Text(item, style: theme.textTheme.bodyMedium),
           ),
         ],
       ),

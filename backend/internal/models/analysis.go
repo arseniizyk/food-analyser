@@ -3,17 +3,22 @@ package models
 import "github.com/invopop/jsonschema"
 
 type Analysis struct {
-	Barcode     string        `json:"barcode"`
-	Score       int           `json:"score"`
-	Grade       GradeLevel    `json:"grade"`
-	Summary     []SummaryItem `json:"summary"`
-	Risks       []Risk        `json:"risks"`
-	Ingredients []Ingredient  `json:"ingredients"`
+	Barcode     string       `json:"barcode"`
+	Score       int          `json:"score"`
+	Grade       GradeLevel   `json:"grade"`
+	Summary     []string     `json:"summary"`
+	Risks       []Risk       `json:"risks"`
+	Ingredients []Ingredient `json:"ingredients"`
 }
 
-type SummaryItem struct {
-	Message string `json:"message"`
-}
+type GradeLevel string
+
+const (
+	GradeExcellent GradeLevel = "excellent"
+	GradeGood      GradeLevel = "good"
+	GradeAverage   GradeLevel = "average"
+	GradePoor      GradeLevel = "poor"
+)
 
 type Ingredient struct {
 	Name        string              `json:"name"`
@@ -46,15 +51,6 @@ func (IngredientRiskLevel) JSONSchema() *jsonschema.Schema {
 	}
 }
 
-type GradeLevel string
-
-const (
-	GradeExcellent GradeLevel = "excellent"
-	GradeGood      GradeLevel = "good"
-	GradeAverage   GradeLevel = "average"
-	GradePoor      GradeLevel = "poor"
-)
-
 func (GradeLevel) JSONSchema() *jsonschema.Schema {
 	return &jsonschema.Schema{
 		Type: "string",
@@ -84,4 +80,13 @@ func (SeverityLevel) JSONSchema() *jsonschema.Schema {
 			"high",
 		},
 	}
+}
+
+func GenerateAnalysisSchema() *jsonschema.Schema {
+	reflector := jsonschema.Reflector{
+		AllowAdditionalProperties: false,
+		DoNotReference:            true,
+	}
+
+	return reflector.Reflect(&Analysis{})
 }

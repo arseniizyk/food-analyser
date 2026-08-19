@@ -63,7 +63,7 @@ func main() {
 		middleware.RequestID,
 		middlewares.RequestLogger(logger),
 		middleware.Recoverer,
-		middleware.Timeout(cfg.HTTP.ReadTimeout),
+		middleware.Timeout(cfg.HTTP.RequestTimeout),
 		middleware.Compress(5),
 		middlewares.JWTAuth(jwtManager),
 	)
