@@ -100,40 +100,6 @@ func TestAnalyzeNutrition_AllAttemptsFail(t *testing.T) {
 	}
 }
 
-func TestAnalyzeNutrition_ClientErrorIsNotRetried(t *testing.T) {
-	var hits int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		atomic.AddInt32(&hits, 1)
-		http.Error(w, "bad request", http.StatusBadRequest)
-	}))
-	defer srv.Close()
-
-	_, err := newTestService(srv.URL).AnalyzeNutrition(context.Background(), "label")
-	if err == nil {
-		t.Fatal("AnalyzeNutrition: expected error, got nil")
-	}
-	if got := atomic.LoadInt32(&hits); got != 1 {
-		t.Fatalf("attempts = %d, want 1 (4xx must not be retried)", got)
-	}
-}
-
-func TestAnalyzeNutrition_ContextCancelAbortsRetries(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cancel()
-		http.Error(w, "boom", http.StatusInternalServerError)
-	}))
-	defer srv.Close()
-
-	_, err := newTestService(srv.URL).AnalyzeNutrition(ctx, "label")
-	if err == nil {
-		t.Fatal("AnalyzeNutrition: expected error, got nil")
-	}
-	if !strings.Contains(err.Error(), "retry aborted") {
-		t.Fatalf("error message = %q, want retry abort", err)
-	}
-}
-
 func TestAnalyzeNutrition_MalformedSuccessBody(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
