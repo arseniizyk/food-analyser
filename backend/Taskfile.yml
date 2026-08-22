@@ -73,6 +73,11 @@ tasks:
     cmds:
       - '{{.GOLANGCI_LINT}} run --config=.golangci.yml'
 
+  test:
+    desc: "Запуск тестов Go"
+    cmds:
+      - go test -race -count=1 ./...
+
   lint:fix:
     desc: "Запуск golangci-lint с возможным fix"
     deps:

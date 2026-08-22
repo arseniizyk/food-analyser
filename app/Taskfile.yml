@@ -16,3 +16,8 @@ tasks:
     desc: "Install Flutter dependencies for mobile app"
     cmds:
       - flutter pub get
+
+  test:
+    desc: "Run Flutter tests"
+    cmds:
+      - flutter test
