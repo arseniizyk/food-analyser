@@ -17,7 +17,7 @@ func (h *Handler) GetUserScans(w http.ResponseWriter, r *http.Request) {
 	scans, err := h.userService.GetScans(r.Context(), uid)
 	if err != nil {
 		h.logger.Error("failed to get user scans", "user_id", uid, "error", err)
-		utils.WriteError(w, r, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, r, http.StatusInternalServerError, "failed to get user scans")
 		return
 	}
 

@@ -24,18 +24,22 @@ func (s *Service) Analyze(ctx context.Context, barcode string, image io.Reader) 
 	if err != nil {
 		l.Error("failed to analyze nutrition",
 			"nutrition_len", len(nutrition),
-			"nutrition_preview", nutrition[:min(100, len(nutrition))],
 			"error", err,
 		)
-		return nil, errs.ErrAnalysingNutrition
+		l.Debug("nutrition input",
+			"nutrition_preview", nutrition[:min(80, len(nutrition))],
+		)
+		return nil, errs.ErrAnalyzingNutrition
 	}
 
 	analysis.Barcode = barcode
 	if err := s.repo.SaveAnalysis(ctx, analysis); err != nil {
 		l.Error("failed to save analysis",
 			"nutrition_len", len(nutrition),
-			"nutrition_preview", nutrition[:min(100, len(nutrition))],
 			"error", err,
+		)
+		l.Debug("nutrition input",
+			"nutrition_preview", nutrition[:min(80, len(nutrition))],
 		)
 		// Ошибка сохранения не влияет на ответ пользователю.
 		// Анализ уже получен, поэтому возвращаем его несмотря на проблему с БД.

@@ -29,7 +29,7 @@ func (h *Handler) Analyze(w http.ResponseWriter, r *http.Request, barcode string
 			return
 		}
 
-		if errors.Is(err, errs.ErrAnalysingNutrition) {
+		if errors.Is(err, errs.ErrAnalyzingNutrition) {
 			utils.WriteError(w, r, http.StatusBadGateway, "llm service error")
 			return
 		}

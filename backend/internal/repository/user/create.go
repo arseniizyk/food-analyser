@@ -2,32 +2,39 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/arseniizyk/food-analyser/backend/internal/models"
 )
 
 func (r *Repository) CreateIfNotExists(ctx context.Context, googleID string) (*models.User, error) {
-	if u, err := r.GetByGoogleID(ctx, googleID); err == nil {
-		return u, nil
-	}
-
 	id := uuid.New()
 	now := time.Now().UTC()
 
-	query, args, err := r.sb.Insert("users").Columns("id", "google_id", "created_at").Values(id, googleID, now).ToSql()
+	query, args, err := r.sb.
+		Insert("users").
+		Columns("id", "google_id", "created_at").
+		Values(id, googleID, now).
+		Suffix("ON CONFLICT (google_id) DO NOTHING RETURNING id, google_id, created_at").
+		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("build insert: %w", err)
 	}
 
-	if _, err := r.pool.Exec(ctx, query, args...); err != nil {
+	var u models.User
+	if err := r.pool.QueryRow(ctx, query, args...).Scan(&u.ID, &u.GoogleID, &u.CreatedAt); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return r.GetByGoogleID(ctx, googleID)
+		}
 		return nil, fmt.Errorf("exec insert: %w", err)
 	}
 
-	return &models.User{ID: id, GoogleID: googleID, CreatedAt: now}, nil
+	return &u, nil
 }
 
 func (r *Repository) AddScan(ctx context.Context, userID, barcode string) error {

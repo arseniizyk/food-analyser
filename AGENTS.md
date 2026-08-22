@@ -1,0 +1,34 @@
+# AGENTS.md
+
+Microservice monorepo: `backend/` (Go 1.26, chi + pgx + slog), `ml/` (Python FastAPI + PaddleOCR), `app/` (Flutter + Riverpod). Orchestrated by Docker Compose; CI targets `main`/`dev` branches. See `CLAUDE.md` for the broader project guide — several facts below correct it where it is stale.
+
+## Environment setup (backend will panic without this)
+
+- Root `.env` is required: `cp .example.env .env` (docker compose won't start without it).
+- `.example.env` hosts are Docker container names (`food_ml`, `food_postgres`, `food_backend`). For local dev, set these to `localhost`.
+- `LLM_API_KEY`, `LLM_URL`, `LLM_MODEL`, `JWT_SECRET` are required — the app panics if unset.
+- Run backend binaries from `backend/` (migrate uses relative `file://migrations`):
+  `go run ./cmd/migrate -path ../.env` then `go run ./cmd/app -path ../.env`
+
+## Commands
+
+- Backend: `task backend:lint` (golangci-lint v2, `.golangci.yml`), tests `go test -race -count=1 ./...` (matches CI). Only test file: `internal/service/jwt/jwt_test.go` — no DB/integration tests.
+- **`task backend:format` is broken** — it globs non-existent `./server/*.go` (code lives in `internal/`, `cmd/`, `pkg/`). CI enforces gofumpt (+ `-extra`) and gci with prefix `github.com/arseniizyk/food-analyser/backend/`; format manually or rely on `lint:fix`.
+- ML: `ruff check .`, `ruff format --check .`, `mypy . --ignore-missing-imports` (CI, no tests) — run via `task ml:test` (venv + `requirements-dev.txt`, cross-platform). `paddlepaddle` has no macOS wheels, so `ml:setup` (prod deps) fails on macOS — there run OCR via Docker Compose or an existing env, and use `task ml:test` for local checks.
+- App: `flutter analyze`, `flutter test`.
+
+## OpenAPI codegen workflow
+
+- Spec is split across `backend/api/backend/v1/{paths,components,params}/` with relative `$ref`s. Edit those, then run `backend:gen` (oapi-codegen v2, chi-server) and commit the generated `backend/pkg/openapi/backend/v1/backend.gen.go` — CI fails on drift and on uncommitted `pkg/` changes.
+- Generated `.gen.go` is excluded from the gofumpt check in CI but NOT from the gci check.
+
+## Endpoints and auth (docs are stale)
+
+- Real spec paths: `/api/v1/health`, `/api/v1/analysis/{barcode}`, `/api/v1/analyze/{barcode}`, `/api/v1/auth/google`, `/api/v1/history`. README/CLAUDE.md mention a non-existent `/api/v1/product/{barcode}` and ML port 8001 — actual ML port is 8888.
+- JWT is enforced by a path switch in `internal/handler/middlewares/auth.go:53` (`JWTAuth`): `/history` requires auth, `/analyze/` and `/analysis/` are optional, everything else open. New protected endpoints must be added to that switch, and handlers must implement the generated `ServerInterface`.
+
+## Conventions
+
+- Lint (`forbidigo`) bans `print`, `fmt.Print*`, `log.Fatal`/`os.Exit` outside `main.go`, and `panic` outside `main.go` (use `os.Exit(1)` in main).
+- Migrations are golang-migrate numbered `00000N_name.up/down.sql` in `backend/migrations/`; `docker compose up` applies them via the `migrate` service.
+- ML service downloads the ~150MB PaddleOCR `ru` model on first run; upload cap is 10MB. Keep it a thread-safe lazy singleton.

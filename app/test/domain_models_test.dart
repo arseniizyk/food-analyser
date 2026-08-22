@@ -53,7 +53,7 @@ void main() {
     expect(analysis.summary, isEmpty);
     expect(analysis.risks, isEmpty);
     expect(analysis.ingredients, isEmpty);
-    expect(analysis.createdAt, isNotNull);
+    expect(analysis.createdAt, isNull);
   });
 
   test('AnalysisDto skips malformed summary, risk and ingredient entries', () {

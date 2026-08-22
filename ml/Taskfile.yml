@@ -1,23 +1,43 @@
 version: '3'
 
 vars:
-    PYTHON: python
+    PYTHON: '{{if eq OS "windows"}}python{{else}}python3{{end}}'
     VENV_DIR: .venv
-    VENV_PYTHON: '{{.VENV_DIR}}/Scripts/python.exe'
-    VENV_PIP: '{{.VENV_DIR}}/Scripts/python.exe -m pip'
+    VENV_PYTHON: '{{if eq OS "windows"}}{{.VENV_DIR}}/Scripts/python.exe{{else}}{{.VENV_DIR}}/bin/python{{end}}'
+    VENV_PIP: '{{.VENV_PYTHON}} -m pip'
     HOST: 0.0.0.0
     PORT: 8888
 
 tasks:
-    setup:
-        desc: Create virtualenv and install Python dependencies
+    venv:
+        desc: Create a virtualenv (reused by setup and test)
         cmds:
-            - python -m venv {{.VENV_DIR}}
+            - '{{.PYTHON}} -m venv {{.VENV_DIR}}'
+
+    setup:
+        desc: Install production Python dependencies (paddlepaddle et al.)
+        deps: [venv]
+        cmds:
             - '{{.VENV_PIP}} install --upgrade pip'
             - '{{.VENV_PIP}} install -r requirements.txt'
+
+    setup:dev:
+        desc: Install dev tooling (ruff, mypy) into the virtualenv
+        deps: [venv]
+        cmds:
+            - '{{.VENV_PIP}} install --upgrade pip'
+            - '{{.VENV_PIP}} install -r requirements-dev.txt'
 
     run:
         desc: Run the OCR service with uvicorn
         deps: [setup]
         cmds:
             - '{{.VENV_PYTHON}} -m uvicorn main:app --host {{.HOST}} --port {{.PORT}}'
+
+    test:
+        desc: Run ruff, mypy and formatting checks (mirrors CI)
+        deps: [setup:dev]
+        cmds:
+            - '{{.VENV_PYTHON}} -m ruff check .'
+            - '{{.VENV_PYTHON}} -m ruff format --check .'
+            - '{{.VENV_PYTHON}} -m mypy . --ignore-missing-imports'

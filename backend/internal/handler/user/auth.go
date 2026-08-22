@@ -2,14 +2,22 @@ package user
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/arseniizyk/food-analyser/backend/internal/handler/utils"
 )
 
 func (h *Handler) AuthenticateWithGoogle(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1*1024*1024)
+
 	var body googleAuthRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			utils.WriteError(w, r, http.StatusRequestEntityTooLarge, "request body is too large")
+			return
+		}
 		utils.WriteError(w, r, http.StatusBadRequest, "invalid body")
 		return
 	}

@@ -21,3 +21,10 @@ tasks:
     desc: "Stop all Docker Compose microservices"
     cmds:
       - docker compose down
+
+  test:
+    desc: "Run all tests (backend, ML, app)"
+    deps:
+      - backend:test
+      - ml:test
+      - app:test
