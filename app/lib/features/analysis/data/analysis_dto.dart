@@ -14,9 +14,11 @@ class AnalysisDto {
       summary: _parseSummary(json['summary']),
       risks: _parseRisks(json['risks']),
       ingredients: _parseIngredients(json['ingredients']),
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'] as String)
-          : DateTime.now(),
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String)
+          : json['createdAt'] != null
+              ? DateTime.tryParse(json['createdAt'] as String)
+              : null,
     );
   }
 
@@ -45,7 +47,7 @@ class AnalysisDto {
             },
           )
           .toList(),
-      'createdAt': (analysis.createdAt ?? DateTime.now()).toIso8601String(),
+      if (analysis.createdAt != null) 'created_at': analysis.createdAt!.toIso8601String(),
     };
   }
 

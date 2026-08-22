@@ -52,7 +52,7 @@ MAX_NEW_TOKENS = int(os.getenv("OCR_MAX_NEW_TOKENS", "4096"))
 # Photos of packaging are often skewed/curved/rotated — correct that
 # before the VLM reads the block. Turn off if it ever hurts your data.
 USE_DOC_ORIENTATION_CLASSIFY = (
-        os.getenv("OCR_USE_DOC_ORIENTATION_CLASSIFY", "true").lower() == "true"
+    os.getenv("OCR_USE_DOC_ORIENTATION_CLASSIFY", "true").lower() == "true"
 )
 USE_DOC_UNWARPING = os.getenv("OCR_USE_DOC_UNWARPING", "true").lower() == "true"
 
@@ -79,6 +79,7 @@ _NO_TEXT_PATTERNS = [
 
 def _is_model_refusal(text: str) -> bool:
     return any(p.search(text) for p in _NO_TEXT_PATTERNS)
+
 
 # ---------------------------
 # OCR SINGLETON (thread-safe)

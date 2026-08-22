@@ -75,4 +75,30 @@ void main() {
     expect(analysis, isNull);
     expect(await localStorage.getHistory(''), isEmpty);
   });
+
+  test('returns null createdAt when the response has no timestamp', () async {
+    final apiClient = FakeApiClient(analysisJson: analysisJson);
+    final localStorage = MemoryLocalStorage();
+    final repository = LocalAnalysisRepository(localStorage, apiClient);
+
+    final analysis = await repository.getByBarcode('460000000001');
+
+    expect(analysis, isNotNull);
+    expect(analysis!.createdAt, isNull);
+  });
+
+  test('parses createdAt from created_at snake_case field', () async {
+    final apiClient = FakeApiClient(
+      analysisJson: {
+        ...analysisJson,
+        'created_at': '2026-08-18T12:00:00.000Z',
+      },
+    );
+    final localStorage = MemoryLocalStorage();
+    final repository = LocalAnalysisRepository(localStorage, apiClient);
+
+    final analysis = await repository.getByBarcode('460000000001');
+
+    expect(analysis?.createdAt, DateTime.parse('2026-08-18T12:00:00.000Z'));
+  });
 }

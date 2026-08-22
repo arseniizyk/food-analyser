@@ -4,14 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/app.dart';
 import 'app/app_providers.dart';
 import 'core/theme/app_theme.dart';
+import 'core/storage/flutter_secure_storage.dart';
 import 'core/storage/hive_local_storage.dart';
-import 'core/storage/hive_secure_storage.dart';
 import 'core/widgets/app_loading_view.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   final localStorage = HiveLocalStorage.create();
-  final secureStorage = HiveSecureStorage.create();
+  final secureStorage = FlutterSecureStorageImpl.create();
 
   runApp(
     AppBootstrap(localStorage: localStorage, secureStorage: secureStorage),
@@ -26,7 +26,7 @@ class AppBootstrap extends StatefulWidget {
   });
 
   final HiveLocalStorage localStorage;
-  final HiveSecureStorage secureStorage;
+  final FlutterSecureStorageImpl secureStorage;
 
   @override
   State<AppBootstrap> createState() => _AppBootstrapState();

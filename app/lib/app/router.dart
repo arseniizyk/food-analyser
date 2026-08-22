@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/auth_controller.dart';
 import '../features/auth/presentation/login_screen.dart';
+import '../features/auth/presentation/splash_screen.dart';
 import '../features/history/presentation/history_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/scan/presentation/barcode_scanner_screen.dart';
@@ -11,6 +12,8 @@ import '../features/scan/presentation/scan_screen.dart';
 import 'bottom_nav_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
+  String? pendingLocation;
+
   final router = GoRouter(
     initialLocation: '/app/scan',
     redirect: (context, state) {
@@ -18,7 +21,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthRoute = state.uri.path == '/auth';
 
       if (authState.isLoading) {
-        return null;
+        if (state.uri.path != '/splash') {
+          pendingLocation = state.uri.path;
+        }
+        return '/splash';
+      }
+
+      if (state.uri.path == '/splash') {
+        final target =
+            authState.value == null ? '/auth' : (pendingLocation ?? '/app/scan');
+        pendingLocation = null;
+        return target;
       }
 
       final user = authState.value;
@@ -35,6 +48,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/auth', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return BottomNavShell(navigationShell: navigationShell);

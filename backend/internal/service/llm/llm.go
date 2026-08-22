@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 
@@ -61,7 +62,12 @@ func (s *Service) AnalyzeNutrition(ctx context.Context, nutrition string) (*mode
 	var lastErr error
 
 	const maxAttempts = 5
-	for attempt := 0; attempt < 5; attempt++ {
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		if err := ctx.Err(); err != nil {
+			l.Warn("retry aborted", "attempt", attempt, "error", err)
+			return nil, fmt.Errorf("retry aborted: %w", err)
+		}
+
 		req, err := http.NewRequestWithContext(ctx, "POST", s.cfg.URL, bytes.NewReader(body))
 		if err != nil {
 			l.Error("failed to create analysis request", "error", err)
@@ -81,11 +87,30 @@ func (s *Service) AnalyzeNutrition(ctx context.Context, nutrition string) (*mode
 			"max_attempts", maxAttempts,
 			"error", lastErr,
 		)
+
+		var nonRetryable nonRetryableError
+		if errors.As(lastErr, &nonRetryable) {
+			l.Warn("non-retryable attempt failed, aborting retries",
+				"attempt", attempt,
+				"max_attempts", maxAttempts,
+				"error", lastErr,
+			)
+			return nil, lastErr
+		}
 	}
 
 	l.Error("all attempts failed to analyze nutrition", slog.Any("error", lastErr))
 	return nil, fmt.Errorf("failed after %d attempts: %w", maxAttempts, lastErr)
 }
+
+// nonRetryableError marks errors that will not succeed on retry
+// (e.g. a 4xx response from the LLM provider).
+type nonRetryableError struct {
+	err error
+}
+
+func (e nonRetryableError) Error() string { return e.err.Error() }
+func (e nonRetryableError) Unwrap() error { return e.err }
 
 func (s *Service) doRequest(req *http.Request) (*AnalysisResponse, error) {
 	resp, err := s.client.Do(req)
@@ -93,11 +118,16 @@ func (s *Service) doRequest(req *http.Request) (*AnalysisResponse, error) {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer func() {
+		_, _ = io.Copy(io.Discard, resp.Body) // keep the connection reusable
 		_ = resp.Body.Close()
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("bad status code: %s", resp.Status)
+		statusErr := fmt.Errorf("bad status code: %s", resp.Status)
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			return nil, nonRetryableError{err: statusErr}
+		}
+		return nil, statusErr
 	}
 
 	var apiResponse response

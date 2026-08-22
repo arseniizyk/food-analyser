@@ -14,8 +14,17 @@ import 'package:flutter_test/flutter_test.dart';
 class FakeAuthRepository implements AuthRepository {
   final _userController = StreamController<AppUser?>.broadcast();
 
+  /// When non-null, [currentUser] never completes (simulates slow auth load).
+  final Completer<AppUser?>? pendingCurrentUser;
+
+  FakeAuthRepository({this.pendingCurrentUser});
+
   @override
-  Future<AppUser?> currentUser() async => const GuestUser('guest-local');
+  Future<AppUser?> currentUser() {
+    final pending = pendingCurrentUser;
+    if (pending != null) return pending.future;
+    return Future.value(const GuestUser('guest-local'));
+  }
 
   @override
   Stream<AppUser?> watchUser() => _userController.stream;
@@ -219,5 +228,47 @@ void main() {
     expect(state.hasError, isTrue);
     expect(state.error.toString(), contains('Scan session was not found'));
     expect(scanRepository.analyzedSessions, isEmpty);
+  });
+
+  test('oldest sessions are evicted once the cap is reached', () async {
+    await container.read(authControllerProvider.future);
+    final notifier = container.read(scanControllerProvider.notifier);
+
+    for (var i = 0; i < 9; i++) {
+      final barcode = '4600000000${(100 + i)}';
+      await notifier.scanBarcode(barcode);
+    }
+
+    final evictedId = 'scan-4600000000100';
+    await notifier.scanIngredients(
+      imagePath: 'photo.jpg',
+      sessionId: evictedId,
+    );
+
+    final state = container.read(scanControllerProvider);
+    expect(state.hasError, isTrue);
+    expect(state.error.toString(), contains('Scan session was not found'));
+  });
+
+  test('scanBarcode reports auth loading instead of guest flash', () async {
+    final pending = Completer<AppUser?>();
+    authRepository = FakeAuthRepository(pendingCurrentUser: pending);
+    container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(authRepository),
+        scanRepositoryProvider.overrideWithValue(scanRepository),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final notifier = container.read(scanControllerProvider.notifier);
+    await notifier.scanBarcode('460000000001');
+
+    final state = container.read(scanControllerProvider);
+    expect(state.hasError, isTrue);
+    expect(state.error.toString(), contains('Account is still loading'));
+    expect(scanRepository.startedBarcodes, isEmpty);
+
+    pending.complete(const GuestUser('guest-local'));
   });
 }

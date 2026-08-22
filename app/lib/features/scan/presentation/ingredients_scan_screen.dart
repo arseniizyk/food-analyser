@@ -239,12 +239,20 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
       );
       await tempFile.writeAsBytes(photo.bytes);
 
-      await ref
-          .read(scanControllerProvider.notifier)
-          .scanIngredients(
-            imagePath: tempFile.path,
-            sessionId: widget.sessionId,
-          );
+      try {
+        await ref
+            .read(scanControllerProvider.notifier)
+            .scanIngredients(
+              imagePath: tempFile.path,
+              sessionId: widget.sessionId,
+            );
+      } finally {
+        try {
+          await tempFile.delete();
+        } catch (_) {
+          // Best-effort cleanup for the temporary cropped image.
+        }
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -307,6 +315,21 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
       final analysis = session?.analysis;
 
       if (next.hasError && _isProcessing) {
+        final error = next.error;
+        if (error is StateError &&
+            error.message == 'Scan session was not found.') {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Scan session has expired. Please start again.'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            setState(() => _isProcessing = false);
+            _handleBack();
+          }
+          return;
+        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

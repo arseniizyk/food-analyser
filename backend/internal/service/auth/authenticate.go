@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
+	"strings"
 )
 
 func (s *Service) Authenticate(ctx context.Context, idToken string) (userID, accessToken, email string, err error) {
@@ -13,16 +16,26 @@ func (s *Service) Authenticate(ctx context.Context, idToken string) (userID, acc
 		return "", "", "", errors.New("empty id token")
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://oauth2.googleapis.com/tokeninfo?id_token="+idToken, http.NoBody)
+	uri := s.tokenInfoURL + "?id_token=" + url.QueryEscape(idToken)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, uri, http.NoBody)
 	if err != nil {
-		return "", "", "", fmt.Errorf("http making request: %w", err)
+		return "", "", "", fmt.Errorf("making request: %w", err)
 	}
+
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return "", "", "", fmt.Errorf("verify token: %w", err)
 	}
-
 	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4*1024))
+		return "", "", "", fmt.Errorf(
+			"tokeninfo responded with status %s: %s",
+			resp.Status,
+			strings.TrimSpace(string(body)),
+		)
+	}
 
 	var token tokenInfo
 	if err := json.NewDecoder(resp.Body).Decode(&token); err != nil {
@@ -30,6 +43,9 @@ func (s *Service) Authenticate(ctx context.Context, idToken string) (userID, acc
 	}
 	if token.ErrorDescription != "" {
 		return "", "", "", fmt.Errorf("token info error: %s", token.ErrorDescription)
+	}
+	if token.Iss != "accounts.google.com" && token.Iss != "https://accounts.google.com" {
+		return "", "", "", fmt.Errorf("invalid issuer: %s", token.Iss)
 	}
 	if token.Aud != s.clientID && token.Aud != s.iosClientID {
 		return "", "", "", fmt.Errorf("invalid audience")

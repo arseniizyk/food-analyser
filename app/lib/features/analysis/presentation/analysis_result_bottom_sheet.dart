@@ -37,6 +37,9 @@ class AnalysisResultBottomSheet extends ConsumerWidget {
   });
 
   final String barcode;
+
+  /// Already-available analysis (e.g. from a just-finished scan).
+  /// When null the sheet fetches the analysis by [barcode].
   final Analysis? initialAnalysis;
   final VoidCallback? onScanAnother;
 
@@ -59,13 +62,17 @@ class AnalysisResultBottomSheet extends ConsumerWidget {
       height: MediaQuery.sizeOf(context).height * 0.88,
       child: analysisState.when(
         loading: () => const AppLoadingView(message: 'Analyzing product...'),
-        error: (error, stackTrace) => AppErrorView(message: error.toString()),
+        error: (error, stackTrace) =>
+            AppErrorView(message: error.toString()),
         data: (analysis) {
           if (analysis == null) {
             return const AppErrorView(message: 'Analysis was not found.');
           }
 
-          return _ResultBody(analysis: analysis, onScanAnother: onScanAnother);
+          return _ResultBody(
+            analysis: analysis,
+            onScanAnother: onScanAnother,
+          );
         },
       ),
     );

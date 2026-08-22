@@ -33,7 +33,8 @@ func (repo *Repository) SaveAnalysis(ctx context.Context, analysis *models.Analy
 				score = EXCLUDED.score,
 				summary = EXCLUDED.summary,
 				risks = EXCLUDED.risks,
-				ingredients = EXCLUDED.ingredients
+				ingredients = EXCLUDED.ingredients,
+				updated_at = now()
 		`).
 		ToSql()
 	if err != nil {

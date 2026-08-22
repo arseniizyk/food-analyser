@@ -17,6 +17,7 @@ type UserRepository interface {
 type Service struct {
 	clientID       string
 	iosClientID    string
+	tokenInfoURL   string
 	userRepository UserRepository
 	jwtManager     *jwtpkg.Manager
 	httpClient     *http.Client
@@ -27,6 +28,7 @@ func New(logger *slog.Logger, clientID, iosClientID string, users UserRepository
 	return &Service{
 		clientID:       clientID,
 		iosClientID:    iosClientID,
+		tokenInfoURL:   "https://oauth2.googleapis.com/tokeninfo",
 		userRepository: users,
 		jwtManager:     jwtManager,
 		logger:         logger,

@@ -21,7 +21,10 @@ func (r *Repository) GetByGoogleID(ctx context.Context, googleID string) (*model
 	var u models.User
 	row := r.pool.QueryRow(ctx, query, args...)
 	if err := row.Scan(&u.ID, &u.GoogleID, &u.CreatedAt); err != nil {
-		return nil, errs.ErrUserNotFound
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, errs.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("scan user: %w", err)
 	}
 	return &u, nil
 }
@@ -56,7 +59,7 @@ func (r *Repository) GetScans(ctx context.Context, userID string) ([]models.Scan
 
 	query, args, err := r.sb.Select("s.barcode", "s.created_at", "COALESCE(a.score, 0)").
 		From("user_scans s").
-		Join("analyses a ON a.barcode = s.barcode").
+		LeftJoin("analyses a ON a.barcode = s.barcode").
 		Where(sq.Eq{"s.user_id": userID}).
 		OrderBy("s.created_at DESC").
 		ToSql()

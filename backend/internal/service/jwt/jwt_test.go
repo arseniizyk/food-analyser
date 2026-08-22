@@ -109,3 +109,24 @@ func TestManager_Parse_MissingUserID(t *testing.T) {
 		t.Fatal("Parse of token without user_id claim: expected error, got nil")
 	}
 }
+
+func TestManager_Parse_RejectsAlgorithmConfusion(t *testing.T) {
+	m, err := New(testSecret, time.Hour)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
+		"sub":     "user-uuid",
+		"user_id": "user-uuid",
+		"exp":     time.Now().Add(time.Hour).Unix(),
+	})
+	signed, err := token.SignedString([]byte(testSecret))
+	if err != nil {
+		t.Fatalf("SignedString: %v", err)
+	}
+
+	if _, err := m.Parse(signed); err == nil {
+		t.Fatal("Parse of HS512-signed token: expected error, got nil")
+	}
+}

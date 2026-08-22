@@ -21,10 +21,15 @@ abstract interface class ApiClient {
 
 /// Real HTTP API client that communicates with backend services.
 class HttpApiClient implements ApiClient {
-  HttpApiClient({required this.baseUrl, required this._secureStorage});
+  HttpApiClient({
+    required this.baseUrl,
+    required this._secureStorage,
+    http.Client? client,
+  }) : _client = client ?? http.Client();
 
   final String baseUrl;
   final SecureStorage _secureStorage;
+  final http.Client _client;
 
   Future<Map<String, String>> _authHeaders({
     bool includeContentType = true,
@@ -80,9 +85,6 @@ class HttpApiClient implements ApiClient {
       final request = http.MultipartRequest('POST', uri);
 
       request.files.add(await http.MultipartFile.fromPath('image', imagePath));
-      if (userId != null && userId.isNotEmpty) {
-        request.fields['user_id'] = userId;
-      }
 
       final headers = await _authHeaders(includeContentType: false);
       request.headers.addAll(headers);
@@ -92,7 +94,9 @@ class HttpApiClient implements ApiClient {
       );
 
       if (response.statusCode != 200) {
-        final body = await response.stream.bytesToString();
+        final body = await response.stream
+            .bytesToString()
+            .timeout(const Duration(seconds: 60));
         switch (response.statusCode) {
           case 400:
             _throwApiError(
@@ -127,14 +131,16 @@ class HttpApiClient implements ApiClient {
         }
       }
 
-      final responseBody = await response.stream.bytesToString();
-      return decodeJsonObject(responseBody);
+      final responseBody = await response.stream
+          .bytesToString()
+          .timeout(const Duration(minutes: 5));
+      return await decodeJsonObject(responseBody);
     } on ApiError {
       rethrow;
     } on TimeoutException {
       throw ApiError('Сервис отвечает слишком долго, попробуйте позже');
     } catch (e) {
-      throw ApiError('Не удалось распознать текст');
+      throw ApiError('Не удалось распознать текст', cause: e);
     }
   }
 
@@ -143,7 +149,7 @@ class HttpApiClient implements ApiClient {
     try {
       final uri = Uri.parse('$baseUrl/api/v1/analysis/$barcode');
       final headers = await _authHeaders();
-      final response = await http
+      final response = await _client
           .get(uri, headers: headers)
           .timeout(const Duration(seconds: 30));
 
@@ -158,11 +164,11 @@ class HttpApiClient implements ApiClient {
         );
       }
 
-      return decodeJsonObjectOrNull(response.body);
+      return await decodeJsonObjectOrNull(response.body);
     } on ApiError {
       rethrow;
     } catch (e) {
-      throw ApiError('Не удалось получить результат анализа');
+      throw ApiError('Не удалось получить результат анализа', cause: e);
     }
   }
 
@@ -171,7 +177,7 @@ class HttpApiClient implements ApiClient {
     try {
       final uri = Uri.parse('$baseUrl/api/v1/history');
       final headers = await _authHeaders();
-      final response = await http
+      final response = await _client
           .get(uri, headers: headers)
           .timeout(const Duration(seconds: 30));
 
@@ -183,11 +189,11 @@ class HttpApiClient implements ApiClient {
         );
       }
 
-      return decodeJsonList(response.body);
+      return await decodeJsonList(response.body);
     } on ApiError {
       rethrow;
     } catch (e) {
-      throw ApiError('Не удалось получить историю');
+      throw ApiError('Не удалось получить историю', cause: e);
     }
   }
 }

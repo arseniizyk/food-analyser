@@ -21,6 +21,8 @@ final scanControllerProvider =
     AsyncNotifierProvider<ScanController, ScanSession?>(ScanController.new);
 
 class ScanController extends AsyncNotifier<ScanSession?> {
+  static const _maxSessions = 8;
+
   final Map<String, ScanSession> _sessions = {};
 
   @override
@@ -28,6 +30,9 @@ class ScanController extends AsyncNotifier<ScanSession?> {
 
   ScanSession _trackSession(ScanSession session) {
     _sessions[session.id] = session;
+    while (_sessions.length > _maxSessions) {
+      _sessions.remove(_sessions.keys.first);
+    }
     return session;
   }
 
@@ -38,7 +43,14 @@ class ScanController extends AsyncNotifier<ScanSession?> {
       return;
     }
 
-    final user = ref.read(authControllerProvider).value;
+    final authState = ref.read(authControllerProvider);
+    if (authState.isLoading) {
+      state = await _error(
+        StateError('Account is still loading. Please try again in a moment.'),
+      );
+      return;
+    }
+    final user = authState.value;
     if (user == null) {
       state = await _error(StateError('User is not authenticated.'));
       return;
