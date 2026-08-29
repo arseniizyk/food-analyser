@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/camera/camera_permission_helper.dart';
+import '../../../core/camera/gallery_permission_helper.dart';
 import '../../../core/camera/movable_selection_overlay.dart';
 import '../../../core/utils/image_processor.dart';
 import '../../analysis/presentation/analysis_result_bottom_sheet.dart';
@@ -33,6 +35,7 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
   bool _isProcessing = false;
   bool _isTakingPicture = false;
   String? _capturedImagePath;
+  bool _capturedFromGallery = false;
   String? _cameraError;
   Rect _cropRect = const Rect.fromLTRB(0.275, 0.31, 0.725, 0.49);
 
@@ -151,7 +154,7 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     final capturedImagePath = _capturedImagePath;
-    if (capturedImagePath != null) {
+    if (capturedImagePath != null && !_capturedFromGallery) {
       unawaited(File(capturedImagePath).delete());
     }
     _controller?.dispose();
@@ -200,6 +203,7 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
 
       setState(() {
         _capturedImagePath = picture.path;
+        _capturedFromGallery = false;
       });
     } catch (e) {
       if (mounted) {
@@ -213,6 +217,60 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
           _isTakingPicture = false;
         });
       }
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    if (_isProcessing || _isTakingPicture || _capturedImagePath != null) return;
+
+    final status = await GalleryPermissionHelper.check();
+    if (!mounted) return;
+    if (status != GalleryPermissionStatus.granted) {
+      if (status == GalleryPermissionStatus.permanentlyDenied ||
+          status == GalleryPermissionStatus.restricted) {
+        showGalleryPermissionSnackBar(context);
+      } else {
+        final requested = await GalleryPermissionHelper.request();
+        if (!mounted) return;
+        if (requested != GalleryPermissionStatus.granted) {
+          if (requested == GalleryPermissionStatus.permanentlyDenied ||
+              requested == GalleryPermissionStatus.restricted) {
+            showGalleryPermissionSnackBar(context);
+          }
+          return;
+        }
+      }
+    }
+
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked == null) {
+      return;
+    }
+
+    ref.read(scanControllerProvider.notifier).reset();
+
+    final previousCapturedImagePath = _capturedImagePath;
+    if (previousCapturedImagePath != null &&
+        previousCapturedImagePath != picked.path &&
+        !_capturedFromGallery) {
+      try {
+        await File(previousCapturedImagePath).delete();
+      } catch (_) {
+        // Best-effort cleanup for temporary review images.
+      }
+    }
+
+    final controller = _controller;
+    if (controller != null && controller.value.isInitialized) {
+      await controller.pausePreview();
+    }
+
+    if (mounted) {
+      setState(() {
+        _capturedImagePath = picked.path;
+        _capturedFromGallery = true;
+      });
     }
   }
 
@@ -290,10 +348,12 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
 
     ref.read(scanControllerProvider.notifier).reset();
 
-    try {
-      await File(capturedImagePath).delete();
-    } catch (_) {
-      // Best-effort cleanup for the discarded photo.
+    if (!_capturedFromGallery) {
+      try {
+        await File(capturedImagePath).delete();
+      } catch (_) {
+        // Best-effort cleanup for the discarded photo.
+      }
     }
   }
 
@@ -443,6 +503,8 @@ class _IngredientsScanScreenState extends ConsumerState<IngredientsScanScreen>
                         !hasCapturedImage &&
                         controller?.value.flashMode == FlashMode.torch,
                     onBack: _handleBack,
+                    onPickGallery: _pickFromGallery,
+                    canPickGallery: !hasCapturedImage,
                     onToggleTorch: hasCapturedImage
                         ? null
                         : () async {
@@ -489,12 +551,16 @@ class _TopBar extends StatelessWidget {
     required this.torchEnabled,
     required this.onBack,
     required this.onToggleTorch,
+    required this.onPickGallery,
+    required this.canPickGallery,
   });
 
   final String title;
   final bool torchEnabled;
   final VoidCallback onBack;
   final VoidCallback? onToggleTorch;
+  final VoidCallback onPickGallery;
+  final bool canPickGallery;
 
   @override
   Widget build(BuildContext context) {
@@ -520,6 +586,12 @@ class _TopBar extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
+          ),
+          IconButton(
+            tooltip: 'Pick from gallery',
+            color: Colors.white,
+            onPressed: canPickGallery ? onPickGallery : null,
+            icon: const Icon(Icons.photo_library_outlined),
           ),
           IconButton(
             tooltip: torchEnabled ? 'Turn flash off' : 'Turn flash on',

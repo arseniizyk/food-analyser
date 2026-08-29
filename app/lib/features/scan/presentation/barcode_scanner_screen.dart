@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../core/camera/barcode_utils.dart';
 import '../../../core/camera/camera_permission_helper.dart';
+import '../../../core/camera/gallery_permission_helper.dart';
 import '../../../core/camera/scan_overlay.dart';
 import '../../analysis/presentation/analysis_result_bottom_sheet.dart';
 import '../domain/scan_session.dart';
@@ -46,7 +48,9 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
       _isCheckingPermission = false;
     });
 
-    if (status == CameraPermissionStatus.granted) {
+    // The controller is always created so gallery barcode scanning works even
+    // without camera permission; the live preview only mounts when granted.
+    if (_controller == null) {
       _startScanner();
     }
   }
@@ -192,6 +196,95 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
     _controller?.start();
   }
 
+  Future<void> _pickBarcodeFromGallery() async {
+    if (_isProcessingScan || _isConfirmingBarcode) return;
+
+    final status = await GalleryPermissionHelper.check();
+    if (!mounted) return;
+    if (status != GalleryPermissionStatus.granted) {
+      if (status == GalleryPermissionStatus.permanentlyDenied ||
+          status == GalleryPermissionStatus.restricted) {
+        showGalleryPermissionSnackBar(context);
+      } else {
+        final requested = await GalleryPermissionHelper.request();
+        if (!mounted) return;
+        if (requested != GalleryPermissionStatus.granted) {
+          if (requested == GalleryPermissionStatus.permanentlyDenied ||
+              requested == GalleryPermissionStatus.restricted) {
+            showGalleryPermissionSnackBar(context);
+          }
+          return;
+        }
+      }
+    }
+
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked == null) {
+      return;
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _isProcessingScan = true;
+    });
+
+    try {
+      final capture = await _controller?.analyzeImage(
+        picked.path,
+        formats: BarcodeUtils.retailFormats,
+      );
+
+      if (!mounted) return;
+
+      String? detectedValue;
+      if (capture != null) {
+        for (final barcode in capture.barcodes) {
+          final value = barcode.rawValue;
+          if (value != null && value.isNotEmpty) {
+            detectedValue = value;
+            break;
+          }
+        }
+      }
+
+      if (detectedValue == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Barcode not found in image.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Hand off to the existing barcode handler (confirm dialog + scan).
+      // Clear the flag first so its internal re-entrancy guard does not bail.
+      setState(() {
+        _isProcessingScan = false;
+      });
+      await _handleBarcode(detectedValue);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to read barcode from image: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessingScan = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(scanControllerProvider, (previous, next) {
@@ -288,6 +381,8 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen>
                         setState(() {});
                       }
                     },
+                    onPickGallery: _pickBarcodeFromGallery,
+                    canPickGallery: _controller != null,
                   ),
                   if (isLoading || _isProcessingScan)
                     const _ProcessingOverlay(),
@@ -388,11 +483,15 @@ class _ScannerTopBar extends StatelessWidget {
     required this.torchEnabled,
     required this.onBack,
     required this.onToggleTorch,
+    required this.onPickGallery,
+    required this.canPickGallery,
   });
 
   final bool torchEnabled;
   final VoidCallback onBack;
   final VoidCallback onToggleTorch;
+  final VoidCallback onPickGallery;
+  final bool canPickGallery;
 
   @override
   Widget build(BuildContext context) {
@@ -418,6 +517,12 @@ class _ScannerTopBar extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
+          ),
+          IconButton(
+            tooltip: 'Pick barcode from gallery',
+            color: Colors.white,
+            onPressed: canPickGallery ? onPickGallery : null,
+            icon: const Icon(Icons.photo_library_outlined),
           ),
           IconButton(
             tooltip: torchEnabled ? 'Turn flash off' : 'Turn flash on',
